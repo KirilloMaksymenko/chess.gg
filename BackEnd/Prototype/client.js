@@ -1,11 +1,24 @@
 
-console.log("gg")
 
-// const IP = "localhost";
-// const PORT = 11111;
+let clientId = ""
 
-// const socket = io.connect('ws://'+IP+':'+PORT);
+const IP = "localhost"
+const PORT = 12345
 
-// socket.on('client-id',function(clientid){
-//     document.getElementById("id-client-text").textContent = clientid
-// });
+const socket = io.connect('ws://'+IP+':'+PORT)
+
+socket.on('client-id',function(clientid){
+    document.getElementById("id-client-text").textContent = clientid
+    clientId = clientid
+})
+
+socket.on("redirect",(page)=>{
+    console.log("redirect")
+    localStorage.setItem('userId', clientId);
+    window.location.href = page
+})
+
+document.getElementById("create-room-bt").addEventListener("click", ()=>{
+    console.log("clic")
+    socket.emit('create-room', clientId); 
+})
