@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess.gg - Гра</title>
+    
+</head>
+<body>
+    <div class="game-container">
+        <h1>Chess.gg</h1>
+        <div class="info">
+            <p><strong>ID гравця:</strong> <span id="player-id">Завантаження...</span></p>
+            <p><strong>ID кімнати:</strong> <span id="room-id">Завантаження...</span></p>
+            <p><strong>Роль:</strong> <span id="player-role">Завантаження...</span></p>
+            <p><strong>Колір:</strong> <span id="player-color">-</span></p>
+            <p><strong>Гравців:</strong> <span id="players-count">-</span> | <strong>Глядачів:</strong> <span id="spectators-count">-</span></p>
+        </div>
+        <div style="margin-top: 20px;">
+            <button onclick="checkRole()">Перевірити роль</button>
+        </div>
+        <p>Тут буде інтегрована гра в шахи</p>
+        <a href="/lobby.html" class="back-btn">Повернутися до лобі</a>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/script.js"></script>
+</body>
+</html>
+

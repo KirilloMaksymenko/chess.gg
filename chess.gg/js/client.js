@@ -1,0 +1,182 @@
+let clientId = ""
+let currentRoomId = null
+
+const socket = io()
+
+socket.on('connect', function() {
+    console.log('Connected to server')
+})
+
+socket.on('disconnect', function() {
+    console.log('Disconnected from server')
+})
+
+socket.on('connect_error', function(error) {
+    console.error('Connection error:', error)
+    alert('Помилка підключення до сервера')
+})
+
+socket.on('client-id', function(clientid) {
+    console.log('Received client ID:', clientid)
+    const idElement = document.getElementById("id-client-text")
+    if (idElement) {
+        idElement.textContent = clientid
+    }
+    clientId = clientid
+})
+
+socket.on('rooms-list', function(rooms) {
+    console.log('Received rooms list:', rooms)
+    updateRoomsList(rooms)
+})
+
+socket.on('room-created', function(data) {
+    console.log("Room created event:", data)
+    if (data && data.roomId) {
+        currentRoomId = data.roomId
+        const currentRoomElement = document.getElementById("current-room")
+        if (currentRoomElement) {
+            const roleText = data.role === 'player' ? 'Гравець' : 'Глядач'
+            currentRoomElement.textContent = `Ваша кімната: ${data.roomId} (Ви: ${roleText}, очікування гравця...)`
+            currentRoomElement.style.display = "block"
+        }
+        console.log("Room created, currentRoomId set to:", currentRoomId, "role:", data.role, "color:", data.color)
+        if (data.role) {
+            localStorage.setItem('playerRole', data.role)
+        }
+        if (data.color) {
+            localStorage.setItem('playerColor', data.color)
+        }
+    }
+})
+
+socket.on('room-joined', function(data) {
+    console.log("Room joined event:", data)
+    if (data && data.roomId) {
+        currentRoomId = data.roomId
+        const currentRoomElement = document.getElementById("current-room")
+        if (currentRoomElement) {
+            const roleText = data.role === 'player' ? 'Гравець' : 'Глядач'
+            currentRoomElement.textContent = `Ви в кімнаті: ${data.roomId} (Ви: ${roleText})`
+            currentRoomElement.style.display = "block"
+        }
+        console.log("Room joined, currentRoomId set to:", currentRoomId, "role:", data.role, "color:", data.color)
+        if (data.role) {
+            localStorage.setItem('playerRole', data.role)
+        }
+        if (data.color) {
+            localStorage.setItem('playerColor', data.color)
+        }
+    }
+})
+
+socket.on('redirect', function(url) {
+    console.log("Redirect event received, redirecting to:", url)
+    console.log("Current clientId:", clientId)
+    console.log("Current roomId:", currentRoomId)
+    
+    const urlParams = new URLSearchParams(url.split('?')[1] || '')
+    const roomIdFromUrl = urlParams.get('roomId')
+    if (roomIdFromUrl) {
+        currentRoomId = roomIdFromUrl
+        console.log("Extracted roomId from URL:", currentRoomId)
+    }
+    
+    if (!clientId && socket.id) {
+        clientId = socket.id
+        console.log("Using socket.id as clientId:", clientId)
+    }
+    
+    if (clientId) {
+        console.log("Saving userId to localStorage:", clientId)
+        localStorage.setItem('userId', clientId)
+    } else {
+        console.warn("Warning: clientId is not set before redirect!")
+    }
+    
+    if (currentRoomId) {
+        localStorage.setItem('roomId', currentRoomId)
+    }
+    
+    setTimeout(() => {
+        console.log("Performing redirect to:", url)
+        console.log("Final clientId before redirect:", clientId)
+        window.location.replace(url)
+    }, 300)
+})
+
+socket.on('error', function(error) {
+    alert(error.message || 'Сталася помилка')
+    console.error('Error:', error)
+})
+
+function updateRoomsList(rooms) {
+    const roomsList = document.getElementById("rooms-list")
+    if (!roomsList) {
+        console.error('rooms-list element not found')
+        return
+    }
+    
+    roomsList.innerHTML = ""
+
+    if (!rooms || rooms.length === 0) {
+        roomsList.innerHTML = '<p class="no-rooms">Немає доступних кімнат</p>'
+        return
+    }
+
+    rooms.forEach(room => {
+        const roomElement = document.createElement('div')
+        roomElement.className = 'room-item'
+        roomElement.innerHTML = `
+            <div class="room-info">
+                <span class="room-id">Кімната #${room.roomId}</span>
+                <span class="room-players">${room.playersCount}/${room.maxPlayers} гравців</span>
+            </div>
+            <button class="join-btn" data-room-id="${room.roomId}">Приєднатися</button>
+        `
+        roomsList.appendChild(roomElement)
+    })
+
+    document.querySelectorAll('.join-btn').forEach(btn => {
+        const newBtn = btn.cloneNode(true)
+        btn.parentNode.replaceChild(newBtn, btn)
+        newBtn.addEventListener('click', function() {
+            const roomId = this.getAttribute('data-room-id')
+            console.log('Joining room:', roomId)
+            joinRoom(roomId)
+        })
+    })
+}
+
+function joinRoom(roomId) {
+    if (currentRoomId) {
+        alert('Ви вже знаходитесь в кімнаті')
+        return
+    }
+    socket.emit('join-room', { roomId: roomId })
+}
+
+function createRoom() {
+    if (currentRoomId) {
+        alert('Ви вже знаходитесь в кімнаті')
+        return
+    }
+    socket.emit('create-room', {})
+}
+
+function init() {
+    const createBtn = document.getElementById("create-room-bt")
+    if (createBtn) {
+        createBtn.addEventListener("click", createRoom)
+    }
+
+    setInterval(() => {
+        socket.emit('get-rooms')
+    }, 2000)
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init)
+} else {
+    init()
+}

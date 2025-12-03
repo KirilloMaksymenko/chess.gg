@@ -12,12 +12,9 @@ const clientColor = new Map()
 const socketToOriginalSocket = new Map()
 
 const server = http.createServer((req, res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*')
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
 
-    if (req.url === '/' || req.url === '/lobby.html') {
-        fs.readFile('lobby.html', (err, data) => {
+    if (req.url === '/' || req.url === '/lobby') {
+        fs.readFile('./html/lobby.html', (err, data) => {
             if (err) {
                 res.writeHead(404)
                 res.end('Not found')
@@ -27,7 +24,7 @@ const server = http.createServer((req, res) => {
             }
         })
     } else if (req.url.startsWith('/game')) {
-        fs.readFile('game.html', (err, data) => {
+        fs.readFile('/html/game.html', (err, data) => {
             if (err) {
                 res.writeHead(404)
                 res.end('Not found')
