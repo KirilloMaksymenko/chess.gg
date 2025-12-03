@@ -12,9 +12,6 @@ const clientColor = new Map()
 const socketToOriginalSocket = new Map()
 
 const server = http.createServer((req, res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*')
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
 
     if (req.url === '/' || req.url === '/lobby.html' || req.url === '/lobby') {
         const filePath = path.join(__dirname, 'html', 'lobby.html')
@@ -28,7 +25,7 @@ const server = http.createServer((req, res) => {
             }
         })
     } else if (req.url.startsWith('/game')) {
-        const filePath = path.join(__dirname, 'html', 'game.html')
+        const filePath = path.join(__dirname, 'html', 'index_chess.html')
         fs.readFile(filePath, (err, data) => {
             if (err) {
                 res.writeHead(404)

@@ -22,14 +22,27 @@ body{
 }
 
 .game-stat{
+    
+}
+.block-stat{
     color: rgb(0, 0, 0); 
     padding: 10px; 
     border-radius: 5px;
     min-width: 200px;
     background: rgba(255, 247, 214, 0.9);
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    rotate: 5deg;
 }
-
+.online-info{
+    color: rgb(0, 0, 0); 
+    padding: 10px; 
+    border-radius: 5px;
+    min-width: 200px;
+    background: rgba(255, 205, 205, 0.9);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    rotate: -3deg;
+    margin-bottom: 10px;
+}
 .game-stat div {
     margin: 5px 0;
     font-size: 16px;

@@ -19,19 +19,19 @@ const black_p = ["P","R","S","N","K","Q"]
 const white_p = ["p","r","s","n","k","q"]
 
 const ImgLinks = {
-    "p":"../Source/Paws/v1/pawn_w.png",
-    "r":"../Source/Paws/v1/rok_w.png",
-    "s":"../Source/Paws/v1/slon_w.png",
-    "n":"../Source/Paws/v1/horse_w.png",
-    "k":"../Source/Paws/v1/king_w.png",
-    "q":"../Source/Paws/v1/quin_w.png",
+    "p":"/Source/Paws/v1/pawn_w.png",
+    "r":"/Source/Paws/v1/rok_w.png",
+    "s":"/Source/Paws/v1/slon_w.png",
+    "n":"/Source/Paws/v1/horse_w.png",
+    "k":"/Source/Paws/v1/king_w.png",
+    "q":"/Source/Paws/v1/quin_w.png",
 
-    "P":"../Source/Paws/v1/pawn_b.png",
-    "R":"../Source/Paws/v1/rok_b.png",
-    "S":"../Source/Paws/v1/slon_b.png",
-    "N":"../Source/Paws/v1/horse_b.png",
-    "K":"../Source/Paws/v1/king_b.png",
-    "Q":"../Source/Paws/v1/quin_b.png",
+    "P":"/Source/Paws/v1/pawn_b.png",
+    "R":"/Source/Paws/v1/rok_b.png",
+    "S":"/Source/Paws/v1/slon_b.png",
+    "N":"/Source/Paws/v1/horse_b.png",
+    "K":"/Source/Paws/v1/king_b.png",
+    "Q":"/Source/Paws/v1/quin_b.png",
 }
 
 const ImgObj = {};
@@ -54,7 +54,7 @@ let winner = null; // 'white', 'black', null
 function preloadImages() {
     const imagePromises = [];
     
-    bgImage.src = "../Source/Group 102.png";
+    bgImage.src = "/Source/bg_chess.png";
     imagePromises.push(new Promise((resolve) => {
         bgImage.onload = resolve;
         bgImage.onerror = resolve; 
@@ -68,13 +68,13 @@ function preloadImages() {
             ImgObj[key].onerror = resolve;
         }));
     }
-    pointImage.src = "../Source/point.png";
+    pointImage.src = "/Source/point.png";
     imagePromises.push(new Promise((resolve) => {
         pointImage.onload = resolve;
         pointImage.onerror = resolve;
     }));
     
-    pointAttImage.src = "../Source/point_att.png";
+    pointAttImage.src = "/Source/point_att.png";
     imagePromises.push(new Promise((resolve) => {
         pointAttImage.onload = resolve;
         pointAttImage.onerror = resolve;
