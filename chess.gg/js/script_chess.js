@@ -11,7 +11,7 @@ let map = [
     ["Q","P","","","","","p","q"],
     ["K","P","","","","","p","k"],
     ["S","P","","","","","p","s"],
-    ["N","P","","","","","p","n"],
+    ["N","p","","","","","P","n"],
     ["R","P","","","","","p","r"],
 ]
 
@@ -38,6 +38,7 @@ const ImgObj = {};
 const bgImage = new Image();
 const pointImage = new Image();
 const pointAttImage = new Image();
+const cellImage = new Image();
 
 let imagesLoaded = false;
 
@@ -78,6 +79,12 @@ function preloadImages() {
     imagePromises.push(new Promise((resolve) => {
         pointAttImage.onload = resolve;
         pointAttImage.onerror = resolve;
+    }));
+
+    cellImage.src = "/Source/cell.png";
+    imagePromises.push(new Promise((resolve) => {
+        cellImage.onload = resolve;
+        cellImage.onerror = resolve;
     }));
     
     Promise.all(imagePromises).then(() => {
@@ -121,12 +128,13 @@ function draw(){
 
         for (let i = 0; i < 4; i++) {
             console.log(posSelect[0]+50+i*117, posSelect[1])
-            ctx.rect(dec*117+200+i*117, posSelect[1]*103, 117, 103);
-            ctx.fillStyle = "lightblue";
+            //ctx.rect(dec*117+200+i*117, posSelect[1]*103, 117, 103);
+            //ctx.fillStyle = "lightblue";
             //ctx.fill();
-            ctx.rect(dec*117+200+i*117, posSelect[1]*103, 117, 103);
-            ctx.stroke();
-            ctx.drawImage(ImgObj[piece === piece.toLowerCase() ?  piecSelect[i] : piecSelect[i].toUpperCase()], dec*117+235+117*i, posSelect[1]*103, 50, 100);
+            //ctx.rect(dec*117+200+i*117, posSelect[1]*103, 117, 103);
+            //ctx.stroke();
+            ctx.drawImage(cellImage, dec*117+200+i*117, posSelect[1]*103, 117, 103);
+            ctx.drawImage(ImgObj[piece === piece.toLowerCase() ?  piecSelect[i] : piecSelect[i].toUpperCase()], dec*117+235+117*i, posSelect[1]*103+10, 40, 80);
             
         }
     }
