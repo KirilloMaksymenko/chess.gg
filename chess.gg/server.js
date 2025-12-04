@@ -6,7 +6,7 @@ const { randomInt } = require('crypto')
 const PORT = 12345
 
 const newMap =[
-    ["R","P","","","","","p","r"],
+    ["r","P","","","","","p","r"],
     ["N","P","","","","","p","n"],
     ["S","P","","","","","p","s"],
     ["Q","P","","","","","p","q"],
@@ -610,7 +610,8 @@ io.sockets.on('connection', function (client) {
                 spectatorsCount: room.spectators.length,
                 allPlayers: room.players,
                 allSpectators: room.spectators,
-                playerColors: room.playerColors
+                playerColors: room.playerColors,
+                gameInfo: room.gameInfo
             })
             
             console.log(`Sending room-rejoined to ${client.id}: role=${role}, color=${color}, position=${room.players.indexOf(client.id)}`)
@@ -652,6 +653,7 @@ io.sockets.on('connection', function (client) {
         const room = rooms.get(roomId)
         console.log(room)
         room.gameInfo.map = data["map"]
+        console.log(data["map"])
         room.gameInfo.countTurn = data["countTurn"]
         room.gameInfo.currentTurn = data["currentTurn"]
         room.gameInfo.gameStatus = data["gameStatus"]

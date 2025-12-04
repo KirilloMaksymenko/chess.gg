@@ -15,9 +15,6 @@ let map = [
     ["R","P","","","","","p","r"],
 ]
 
-const black_p = ["P","R","S","N","K","Q"]
-const white_p = ["p","r","s","n","k","q"]
-
 const ImgLinks = {
     "p":"/Source/Paws/v1/pawn_w.png",
     "r":"/Source/Paws/v1/rok_w.png",
@@ -95,11 +92,13 @@ function preloadImages() {
     
     Promise.all(imagePromises).then(() => {
         imagesLoaded = true;
+        console.log("Pre")
         draw(); 
     });
 }
 
 function draw(){
+    console.log("SYKA",map)
     if (!imagesLoaded) {
         return;
     }
@@ -222,14 +221,9 @@ function pawnMoves(piece, pos, collectMoves = false) {
     const moves = [];
     const col = pos[0] - 1;
     const row = pos[1] - 1;
-    const isWhite = piece === piece.toLowerCase(); 
     
-  
-    const direction = isWhite ? -1 : 1; 
-    const startRow = isWhite ? 6 : 1; 
-    
-   
-
+    const direction = -1  
+    const startRow = 6 
 
     const oneStepCol = col;
     const oneStepRow = row + direction;
@@ -415,17 +409,6 @@ function updateGameStatus() {
 
 function logGame(msg){
     const moveCount = document.getElementById("move-count")
-    
-
-    // if(msgs){   
-    //     msg = msgs
-    // }else{
-    //     const piece = map[pos1[0]][pos1[1]]; 
-    //     const pieceColor = piece === piece.toLowerCase() ? 'w' : 'b'; // Name of Players
-
-    //     msg = countTurn+". "+ pieceColor + ": " + String.fromCharCode(pos1[0]+65) + ""+ (8-pos1[1]) + " -> "+ String.fromCharCode(pos2[0]+65) + ""+ (8-pos2[1])
-    //     if(attck) msg+= " #"+map[pos2[0]][pos2[1]]
-    // }
 
     var msgSpan = document.createElement('span')
     msgSpan.textContent = msg;
@@ -466,7 +449,6 @@ function movePiece(fromCol, fromRow, toCol, toRow) {
 
     msg = countTurn+". "+ pieceColor + ": " + String.fromCharCode(fromCol+65) + ""+ (8-fromRow) + " -> "+ String.fromCharCode(toCol+65) + ""+ (8-toRow)
     if(enemyColor(map[fromCol][fromRow],map[toCol][toRow])) msg+= " #"+map[toCol][toRow]
-    //const log = logGame([fromCol,fromRow],[toCol,toRow],enemyColor(map[fromCol][fromRow],map[toCol][toRow]))
 
     if(piece =="p" && toRow == 0){
         map[toCol][toRow] = piece;
@@ -500,15 +482,27 @@ function movePiece(fromCol, fromRow, toCol, toRow) {
     
     updateData()
     
-
+console.log("movepice")
     draw();
 }
 
 function updateData(){
-
+    let newMap = []
+    // Створюємо глибоку копію масиву, щоб не змінювати оригінальний map
+    let clonMap = map.map(row => [...row])
+    console.log("UPDTE send", map)
+    if(yourColor==='white'){
+        newMap = clonMap
+    }else{
+        // Перевертаємо кожен рядок для чорних гравців
+        for (let i = 0; i < clonMap.length; i++) {
+            newMap[i] = [...clonMap[i]].reverse()   
+        }
+    }
+    console.log("FINAML ", newMap)
     updateGameStatus();
     let data = {
-        map: map,
+        map: newMap,
         countTurn: countTurn,
         currentTurn: currentTurn,
         gameStatus: gameStatus,
@@ -566,7 +560,7 @@ function movePoint(e){
         const piece = map[posSelect[0]][posSelect[1]]
 
         selectNewPawn([posSelect[0],posSelect[1]],piece === piece.toLowerCase() ?  piecSelect[t[0]-1] : piecSelect[t[0]-1].toUpperCase())
-        
+        console.log("selecnewpaw")
         draw()
         return
     }
@@ -591,6 +585,7 @@ function movePoint(e){
         if (col === selectedCol && row === selectedRow) {
             selectedPiece = null;
             validMoves = [];
+            console.log("1")
             draw();
             return;
         }
@@ -601,11 +596,13 @@ function movePoint(e){
             if (pieceColor !== currentTurn) {
                 selectedPiece = null;
                 validMoves = [];
+                console.log("2")
                 draw();
                 return;
             }
             selectedPiece = [col, row];
             validMoves = getValidMovesWithCheck(clickedPiece, u);
+            console.log("3")
             draw();
             showMoves(clickedPiece, u);
             return;
@@ -613,25 +610,28 @@ function movePoint(e){
 
         selectedPiece = null;
         validMoves = [];
+        console.log("4")
         draw();
         return;
     }
 
     const piece = map[col][row];
     if (!piece) {
+        console.log("5")
         draw();
         return;
     }
     
     const pieceColor = piece === piece.toLowerCase() ? 'white' : 'black';
     if (pieceColor !== currentTurn) {
+        console.log("6")
         draw();
         return;
     }
 
     selectedPiece = [col, row];
     validMoves = getValidMovesWithCheck(piece, u);
-    
+    console.log("6")
     draw();
     showMoves(piece, u);
 }
@@ -759,6 +759,26 @@ function enemyColor(ch1, ch2) {
 }
 
 
+function flipMap(data){
+    console.log("FLIP START",map," - ",data)
+    // Створюємо глибоку копію, щоб не змінювати оригінальні дані
+    let cloneMap = data.map(row => [...row])
+    if(yourColor==='white'){
+        console.log("MAP ====",map)
+        map = cloneMap
+    }else{
+        console.log("Black flip")
+        let newMap = []
+        // Перевертаємо кожен рядок для чорних гравців
+        for (let i = 0; i < cloneMap.length; i++) {
+            newMap[i] = [...cloneMap[i]].reverse()   
+        }
+        console.log("MAP ====",map)
+        map = newMap
+    }
+    console.log("FLIP END",map)
+}
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////        SERVER FUNCTIONS
@@ -825,7 +845,10 @@ socket.on('room-rejoined', function(data) {
         currentTurn = data.gameInfo.currentTurn
         gameStatus = data.gameInfo.gameStatus
         winner = data.gameInfo.winner
-        map = data.gameInfo.map
+
+        console.log("MAP: ",data.gameInfo.map)
+        flipMap(data.gameInfo.map)
+        
         
         preloadImages();
 
@@ -833,6 +856,7 @@ socket.on('room-rejoined', function(data) {
             updateGameStatus();
             displayGameStatus();
         }, 100);
+        console.log("roomrej")
         draw()
     }
 })
@@ -889,31 +913,17 @@ socket.on('update-game-state', function(data){
     gameStatus = data.gameStatus
     winner = data.winner
 
-    map = data.map
-    console.log(data.log[data.countTurn],data.log,data.countTurn)
+    console.log("MAP: ",data.map)
+
+    flipMap(data.map)
+
     logGame(data.log[data.countTurn])
     displayGameStatus();
+    console.log("updatestate",map)
     draw()
 
 })
 
 
 
-function checkRole() {
-    if (socket.connected) {
-        socket.emit('get-role')
-        console.log('Requesting role information...')
-    } else {
-        alert('Не підключено до сервера')
-    }
-}
-
-function checkColor() {
-    if (socket.connected) {
-        socket.emit('get-color')
-        console.log('Requesting color information...')
-    } else {
-        alert('Не підключено до сервера')
-    }
-}
 
