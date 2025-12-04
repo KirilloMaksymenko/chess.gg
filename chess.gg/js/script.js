@@ -108,14 +108,6 @@ function checkRole() {
     }
 }
 
-function checkColor() {
-    if (socket.connected) {
-        socket.emit('get-color')
-        console.log('Requesting color information...')
-    } else {
-        alert('Не підключено до сервера')
-    }
-}
 
 const storedUserId = localStorage.getItem('userId')
 if (storedUserId) {

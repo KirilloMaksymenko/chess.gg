@@ -6,7 +6,7 @@ const { randomInt } = require('crypto')
 const PORT = 12345
 
 const newMap =[
-    ["r","P","","","","","p","r"],
+    ["R","P","","","","","p","r"],
     ["N","P","","","","","p","n"],
     ["S","P","","","","","p","s"],
     ["Q","P","","","","","p","q"],
@@ -139,36 +139,6 @@ function cleanupRoom(roomId) {
 }
 
 
-// function updateGameMap(){
-//     if(piece =="p" && toRow == 0){
-//         map[toCol][toRow] = piece;
-//         gameStatus = 'selectNewPawn'
-//         posSelect = [toCol,toRow]
-        
-
-
-//     }else if(piece =="P" && toRow == 7){
-
-
-//         map[toCol][toRow] = piece;
-//         gameStatus = 'selectNewPawn'
-//         posSelect = [toCol,toRow]
-        
-//     }else{
-//         map[toCol][toRow] = piece;
-//     }
-
-    
-//     map[fromCol][fromRow] = "";
-
-//     selectedPiece = null;
-//     validMoves = [];
-
-//     currentTurn = currentTurn === 'white' ? 'black' : 'white';
-
-    
-//     updateGameStatus();
-// }
 
 
 

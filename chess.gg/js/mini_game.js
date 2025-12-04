@@ -13,38 +13,6 @@ let map = [
     ["R","P","","","","","p","r"],
 ]
 
-// let map = [
-//     ["R","S","N","K","Q","N","S","R"],
-//     ["P","P","P","P","P","P","P","P"],
-//     ["","","","","","","",""],
-//     ["","","","","","","",""],
-//     ["","","","","","","",""],
-//     ["","","","","","","",""],
-//     ["p","p","p","p","p","p","p","p"],
-//     ["r","s","n","q","k","n","s","r"],
-// ]
-
-const black_p = ["P","R","S","N","K","Q"]
-const white_p = ["p","r","s","n","k","q"]
-
-// const ImgObj = {
-//     "p":new Image(),
-//     "r":new Image(),
-//     "s":new Image(),
-//     "n":new Image(),
-//     "k":new Image(),
-//     "q":new Image(),
-
-//     "P":new Image(),
-//     "R":new Image(),
-//     "S":new Image(),
-//     "N":new Image(),
-//     "K":new Image(),
-//     "Q":new Image(),
-// }
-
-
-
 const ImgLinks = {
     "p":"/Source/Paws/v1/pawn_w.png",
     "r":"/Source/Paws/v1/rok_w.png",
