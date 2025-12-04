@@ -5,7 +5,18 @@ const { randomInt } = require('crypto')
 
 const PORT = 12345
 
-const rooms = new Map()
+const newMap =[
+    ["R","P","","","","","p","r"],
+    ["N","P","","","","","p","n"],
+    ["S","P","","","","","p","s"],
+    ["Q","P","","","","","p","q"],
+    ["K","P","","","","","p","k"],
+    ["S","P","","","","","p","s"],
+    ["N","P","","","","","p","n"],
+    ["R","P","","","","","p","r"],
+]
+
+const rooms = new Map() 
 const clientToRoom = new Map()
 const clientRole = new Map()
 const clientColor = new Map()
@@ -88,7 +99,7 @@ function getAvailableRooms() {
             })
         }
     })
-    console.log(`getAvailableRooms: found ${availableRooms.length} rooms out of ${rooms.size} total`)
+    //console.log(`getAvailableRooms: found ${availableRooms.length} rooms out of ${rooms.size} total`)
     return availableRooms
 }
 
@@ -112,11 +123,57 @@ function getClientColor(clientId) {
 
 function cleanupRoom(roomId) {
     const room = rooms.get(roomId)
-    if (room && room.players.length === 0) {
+    if (!room) return
+
+    const playersCount = room.players ? room.players.length : 0
+    const spectatorsCount = room.spectators ? room.spectators.length : 0
+    const createdAt = room.createdAt || 0
+    const roomAgeMs = Date.now() - createdAt
+
+    const EMPTY_ROOM_TIMEOUT_MS = 10 * 60 * 1000 
+
+    if (playersCount === 0 && spectatorsCount === 0 && roomAgeMs > EMPTY_ROOM_TIMEOUT_MS) {
         rooms.delete(roomId)
-        console.log(`Room ${roomId} deleted (empty)`)
+        console.log(`Room ${roomId} deleted (empty for more than ${EMPTY_ROOM_TIMEOUT_MS / 60000} minutes)`)
     }
 }
+
+
+// function updateGameMap(){
+//     if(piece =="p" && toRow == 0){
+//         map[toCol][toRow] = piece;
+//         gameStatus = 'selectNewPawn'
+//         posSelect = [toCol,toRow]
+        
+
+
+//     }else if(piece =="P" && toRow == 7){
+
+
+//         map[toCol][toRow] = piece;
+//         gameStatus = 'selectNewPawn'
+//         posSelect = [toCol,toRow]
+        
+//     }else{
+//         map[toCol][toRow] = piece;
+//     }
+
+    
+//     map[fromCol][fromRow] = "";
+
+//     selectedPiece = null;
+//     validMoves = [];
+
+//     currentTurn = currentTurn === 'white' ? 'black' : 'white';
+
+    
+//     updateGameStatus();
+// }
+
+
+
+
+
 
 io.sockets.on('connection', function (client) {
     console.log("New client connected: " + client.id)
@@ -140,7 +197,14 @@ io.sockets.on('connection', function (client) {
                 spectators: [],
                 playerColors: { [client.id]: 'white' },
                 originalPlayerOrder: [client.id],
-                createdAt: Date.now()
+                createdAt: Date.now(),
+                gameInfo: {
+                    map: newMap,
+                    countTurn: 0,
+                    currentTurn: 'white',
+                    gameStatus: 'playing',
+                    winner: null
+                }
             })
             clientToRoom.set(client.id, roomId)
             setClientRole(client.id, 'player')
@@ -270,6 +334,7 @@ io.sockets.on('connection', function (client) {
                         playerNumber: index + 1
                     })
                 })
+                
             } else {
                 client.emit('room-joined', { 
                     roomId: roomId,
@@ -293,7 +358,6 @@ io.sockets.on('connection', function (client) {
             }
 
             const room = rooms.get(roomId)
-
             if (!room.spectators) {
                 room.spectators = []
             }
@@ -576,40 +640,51 @@ io.sockets.on('connection', function (client) {
 
     client.on('get-rooms', function () {
         const availableRooms = getAvailableRooms()
-        console.log(`Client ${client.id} requested rooms, sending ${availableRooms.length} rooms`)
+        //console.log(`Client ${client.id} requested rooms, sending ${availableRooms.length} rooms`)
         client.emit('rooms-list', availableRooms)
     })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     client.on('disconnect', function () {
         console.log(`Client ${client.id} disconnected`)
 
         const roomId = clientToRoom.get(client.id)
         const role = getClientRole(client.id)
-        
         if (roomId) {
             const room = rooms.get(roomId)
             if (room) {
                 if (role === 'player') {
                     room.players = room.players.filter(id => id !== client.id)
-                    console.log(`Player ${client.id} left room ${roomId} (kept in original order)`)
+                    console.log(`Player ${client.id} left room ${roomId} (kept in original order & colors for rejoin)`)
                 } else if (role === 'spectator') {
                     if (room.spectators) {
                         room.spectators = room.spectators.filter(id => id !== client.id)
                     }
                     console.log(`Spectator ${client.id} left room ${roomId}`)
                 }
-                
                 clientToRoom.delete(client.id)
                 clientRole.delete(client.id)
-                if (room.playerColors && room.playerColors[client.id]) {
-                    delete room.playerColors[client.id]
-                }
+                clientColor.delete(client.id)
 
                 console.log(`Room ${roomId} now has ${room.players.length} players and ${room.spectators ? room.spectators.length : 0} spectators`)
                 console.log(`Original player order preserved:`, room.originalPlayerOrder)
 
                 io.emit('rooms-list', getAvailableRooms())
-
                 cleanupRoom(roomId)
             }
         }

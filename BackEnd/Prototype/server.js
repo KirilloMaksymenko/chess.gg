@@ -14,7 +14,7 @@ const socketToOriginalSocket = new Map()
 const server = http.createServer((req, res) => {
 
     if (req.url === '/' || req.url === '/lobby') {
-        fs.readFile('./html/lobby.html', (err, data) => {
+        fs.readFile('./lobby.html', (err, data) => {
             if (err) {
                 res.writeHead(404)
                 res.end('Not found')
@@ -24,7 +24,7 @@ const server = http.createServer((req, res) => {
             }
         })
     } else if (req.url.startsWith('/game')) {
-        fs.readFile('/html/game.html', (err, data) => {
+        fs.readFile('./game.html', (err, data) => {
             if (err) {
                 res.writeHead(404)
                 res.end('Not found')
