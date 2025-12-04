@@ -203,7 +203,8 @@ io.sockets.on('connection', function (client) {
                     countTurn: 0,
                     currentTurn: 'white',
                     gameStatus: 'playing',
-                    winner: null
+                    winner: null,
+                    log: []
                 }
             })
             clientToRoom.set(client.id, roomId)
@@ -412,7 +413,8 @@ io.sockets.on('connection', function (client) {
                         role: role,
                         color: color,
                         playersCount: room.players.length,
-                        spectatorsCount: room.spectators.length
+                        spectatorsCount: room.spectators.length,
+                        gameInfo: room.gameInfo
                     })
                     return
                 }
@@ -644,7 +646,22 @@ io.sockets.on('connection', function (client) {
         client.emit('rooms-list', availableRooms)
     })
 
+    client.on('game-turn', function (data) {
+        const roomId = clientToRoom.get(client.id)
 
+        const room = rooms.get(roomId)
+        console.log(room)
+        room.gameInfo.map = data["map"]
+        room.gameInfo.countTurn = data["countTurn"]
+        room.gameInfo.currentTurn = data["currentTurn"]
+        room.gameInfo.gameStatus = data["gameStatus"]
+        room.gameInfo.winner = data["winner"]
+        room.gameInfo.log[room.gameInfo.countTurn] = data.log
+
+        console.log(room)
+        
+        io.to(roomId).emit('update-game-state',room.gameInfo)
+    })
 
 
 

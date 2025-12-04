@@ -272,32 +272,32 @@ function pawnMoves(piece, pos, collectMoves = false) {
     return moves;
 }
 
-// function getValidMoves(piece, pos) {
-//     const moves = [];
+function getValidMoves(piece, pos) {
+    const moves = [];
     
-//     switch (piece.toLowerCase()) {
-//         case "p":
-//             moves.push(...pawnMoves(piece, pos, true));
-//             break;
-//         case "r":
-//             moves.push(...smoothPath([[1,0],[-1,0],[0,1],[0,-1]], pos, true));
-//             break;
-//         case "s":
-//             moves.push(...smoothPath([[1,1],[-1,1],[-1,-1],[1,-1]], pos, true));
-//             break;
-//         case "n":
-//             moves.push(...pointPos([[-2,1],[-2,-1],[1,2],[-1,2],[2,1],[2,-1],[1,-2],[-1,-2]], pos, true));
-//             break;
-//         case "k":
-//             moves.push(...pointPos([[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1]], pos, true));
-//             break;
-//         case "q":
-//             moves.push(...smoothPath([[1,1],[-1,1],[-1,-1],[1,-1],[1,0],[-1,0],[0,1],[0,-1]], pos, true));
-//             break;
-//     }
+    switch (piece.toLowerCase()) {
+        case "p":
+            moves.push(...pawnMoves(piece, pos, true));
+            break;
+        case "r":
+            moves.push(...smoothPath([[1,0],[-1,0],[0,1],[0,-1]], pos, true));
+            break;
+        case "s":
+            moves.push(...smoothPath([[1,1],[-1,1],[-1,-1],[1,-1]], pos, true));
+            break;
+        case "n":
+            moves.push(...pointPos([[-2,1],[-2,-1],[1,2],[-1,2],[2,1],[2,-1],[1,-2],[-1,-2]], pos, true));
+            break;
+        case "k":
+            moves.push(...pointPos([[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1]], pos, true));
+            break;
+        case "q":
+            moves.push(...smoothPath([[1,1],[-1,1],[-1,-1],[1,-1],[1,0],[-1,0],[0,1],[0,-1]], pos, true));
+            break;
+    }
     
-//     return moves;
-// }
+    return moves;
+}
 
 function isValidMove(targetCol, targetRow) {
     return validMoves.some(move => move[0] === targetCol && move[1] === targetRow);
@@ -315,103 +315,112 @@ function findKing(color) {
     return null;
 }
 
-// function isKingInCheck(color) {
-//     const kingPos = findKing(color);
-//     if (!kingPos) return false;
+function isKingInCheck(color) {
+    const kingPos = findKing(color);
+    if (!kingPos) return false;
     
-//     const [kingCol, kingRow] = kingPos;
-//     const enemyColor = color === 'white' ? 'black' : 'white';
+    const [kingCol, kingRow] = kingPos;
+    const enemyColor = color === 'white' ? 'black' : 'white';
 
-//     for (let row = 0; row < 8; row++) {
-//         for (let col = 0; col < 8; col++) {
-//             const piece = map[col][row];
-//             if (!piece) continue;
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            const piece = map[col][row];
+            if (!piece) continue;
             
-//             const pieceColor = piece === piece.toLowerCase() ? 'white' : 'black';
-//             if (pieceColor !== enemyColor) continue;
+            const pieceColor = piece === piece.toLowerCase() ? 'white' : 'black';
+            if (pieceColor !== enemyColor) continue;
             
-//             const moves = getValidMoves(piece, [col + 1, row + 1]);
+            const moves = getValidMoves(piece, [col + 1, row + 1]);
 
-//             if (moves.some(move => move[0] === kingCol && move[1] === kingRow)) {
-//                 return true;
-//             }
-//         }
-//     }
+            if (moves.some(move => move[0] === kingCol && move[1] === kingRow)) {
+                return true;
+            }
+        }
+    }
     
-//     return false;
-// }
+    return false;
+}
 
-// function wouldMovePutKingInCheck(fromCol, fromRow, toCol, toRow, color) {
-//     const originalPiece = map[fromCol][fromRow];
-//     const targetPiece = map[toCol][toRow];
+function wouldMovePutKingInCheck(fromCol, fromRow, toCol, toRow, color) {
+    const originalPiece = map[fromCol][fromRow];
+    const targetPiece = map[toCol][toRow];
     
-//     map[toCol][toRow] = originalPiece;
-//     map[fromCol][fromRow] = "";
+    map[toCol][toRow] = originalPiece;
+    map[fromCol][fromRow] = "";
     
-//     const inCheck = isKingInCheck(color);
+    const inCheck = isKingInCheck(color);
     
-//     map[fromCol][fromRow] = originalPiece;
-//     map[toCol][toRow] = targetPiece;
+    map[fromCol][fromRow] = originalPiece;
+    map[toCol][toRow] = targetPiece;
     
-//     return inCheck;
-// }
+    return inCheck;
+}
 
-// function getValidMovesWithCheck(piece, pos) {
-//     const moves = getValidMoves(piece, pos);
-//     const pieceColor = piece === piece.toLowerCase() ? 'white' : 'black';
+function getValidMovesWithCheck(piece, pos) {
+    const moves = getValidMoves(piece, pos);
+    const pieceColor = piece === piece.toLowerCase() ? 'white' : 'black';
     
-//     const [fromCol, fromRow] = [pos[0] - 1, pos[1] - 1];
-//     return moves.filter(([toCol, toRow]) => {
-//         return !wouldMovePutKingInCheck(fromCol, fromRow, toCol, toRow, pieceColor);
-//     });
-// }
+    const [fromCol, fromRow] = [pos[0] - 1, pos[1] - 1];
+    return moves.filter(([toCol, toRow]) => {
+        return !wouldMovePutKingInCheck(fromCol, fromRow, toCol, toRow, pieceColor);
+    });
+}
 
-// function hasValidMoves(color) {
-//     for (let row = 0; row < 8; row++) {
-//         for (let col = 0; col < 8; col++) {
-//             const piece = map[col][row];
-//             if (!piece) continue;
+function hasValidMoves(color) {
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            const piece = map[col][row];
+            if (!piece) continue;
             
-//             const pieceColor = piece === piece.toLowerCase() ? 'white' : 'black';
-//             if (pieceColor !== color) continue;
+            const pieceColor = piece === piece.toLowerCase() ? 'white' : 'black';
+            if (pieceColor !== color) continue;
             
-//             const validMoves = getValidMovesWithCheck(piece, [col + 1, row + 1]);
-//             if (validMoves.length > 0) {
-//                 return true;
-//             }
-//         }
-//     }
-//     return false;
-// }
+            const validMoves = getValidMovesWithCheck(piece, [col + 1, row + 1]);
+            if (validMoves.length > 0) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
 
-// function updateGameStatus() {
-//     const inCheck = isKingInCheck(currentTurn);
-//     const hasMoves = hasValidMoves(currentTurn);
-//     if(gameStatus == 'selectNewPawn'){
-//         return
-//     }
-//     if (!hasMoves) {
-//         if (inCheck) {
-//             gameStatus = 'checkmate';
-//             winner = currentTurn === 'white' ? 'black' : 'white';
-//         } else {
-//             gameStatus = 'stalemate';
-//         }
-//     } else if (inCheck) {
-//         gameStatus = 'check';
-//     } else {
-//         gameStatus = 'playing';
-//     }
-// }
+function updateGameStatus() {
+    const inCheck = isKingInCheck(currentTurn);
+    const hasMoves = hasValidMoves(currentTurn);
 
-function logGame(pos1,pos2, attck){
+
+    if(gameStatus == 'selectNewPawn'){
+        return
+    }
+    if (!hasMoves) {
+        if (inCheck) {
+            gameStatus = 'checkmate';
+            winner = currentTurn === 'white' ? 'black' : 'white';
+        } else {
+            gameStatus = 'stalemate';
+        }
+    } else if (inCheck) {
+        gameStatus = 'check';
+    } else {
+        gameStatus = 'playing';
+    }
+
+    
+}
+
+function logGame(msg){
     const moveCount = document.getElementById("move-count")
-    const piece = map[pos1[0]][pos1[1]]; 
-    const pieceColor = piece === piece.toLowerCase() ? 'w' : 'b'; // Name of Players
+    
 
-    var msg = countTurn+". "+ pieceColor + ": " + String.fromCharCode(pos1[0]+65) + ""+ (8-pos1[1]) + " -> "+ String.fromCharCode(pos2[0]+65) + ""+ (8-pos2[1])
-    if(attck) msg+= " #"+map[pos2[0]][pos2[1]]
+    // if(msgs){   
+    //     msg = msgs
+    // }else{
+    //     const piece = map[pos1[0]][pos1[1]]; 
+    //     const pieceColor = piece === piece.toLowerCase() ? 'w' : 'b'; // Name of Players
 
+    //     msg = countTurn+". "+ pieceColor + ": " + String.fromCharCode(pos1[0]+65) + ""+ (8-pos1[1]) + " -> "+ String.fromCharCode(pos2[0]+65) + ""+ (8-pos2[1])
+    //     if(attck) msg+= " #"+map[pos2[0]][pos2[1]]
+    // }
 
     var msgSpan = document.createElement('span')
     msgSpan.textContent = msg;
@@ -428,7 +437,7 @@ function logGame(pos1,pos2, attck){
         moveCount.appendChild(msgSpan);
         lastTurn = msgSpan
     }
-    
+    return msg
 }
 
 function selectNewPawn(pos,L){
@@ -448,39 +457,51 @@ function movePiece(fromCol, fromRow, toCol, toRow) {
         return;
     }
 
-    logGame([fromCol,fromRow],[toCol,toRow],enemyColor(map[fromCol][fromRow],map[toCol][toRow]))
-    
 
+    msg = countTurn+". "+ pieceColor + ": " + String.fromCharCode(fromCol+65) + ""+ (8-fromRow) + " -> "+ String.fromCharCode(toCol+65) + ""+ (8-toRow)
+    if(enemyColor(map[fromCol][fromRow])) msg+= " #"+map[toCol][toRow]
+    //const log = logGame([fromCol,fromRow],[toCol,toRow],enemyColor(map[fromCol][fromRow],map[toCol][toRow]))
 
-
-    // if(piece =="p" && toRow == 0){
-    //     map[toCol][toRow] = piece;
-    //     gameStatus = 'selectNewPawn'
-    //     posSelect = [toCol,toRow]
+    if(piece =="p" && toRow == 0){
+        map[toCol][toRow] = piece;
+        gameStatus = 'selectNewPawn'
+        posSelect = [toCol,toRow]
         
 
 
-    // }else if(piece =="P" && toRow == 7){
+    }else if(piece =="P" && toRow == 7){
 
 
-    //     map[toCol][toRow] = piece;
-    //     gameStatus = 'selectNewPawn'
-    //     posSelect = [toCol,toRow]
+        map[toCol][toRow] = piece;
+        gameStatus = 'selectNewPawn'
+        posSelect = [toCol,toRow]
         
-    // }else{
-    //     map[toCol][toRow] = piece;
-    // }
+    }else{
+        map[toCol][toRow] = piece;
+    }
 
     
-    // map[fromCol][fromRow] = "";
+    map[fromCol][fromRow] = "";
 
-    // selectedPiece = null;
-    // validMoves = [];
+    selectedPiece = null;
+    validMoves = [];
 
-    // currentTurn = currentTurn === 'white' ? 'black' : 'white';
+    currentTurn = currentTurn === 'white' ? 'black' : 'white';
 
     
-    // updateGameStatus();
+
+    updateGameStatus();
+
+    let data = {
+        map: map,
+        countTurn: countTurn,
+        currentTurn: currentTurn,
+        gameStatus: gameStatus,
+        winner: winner,
+        log: msg
+    }
+
+    socket.emit('game-turn',data)
 
     displayGameStatus();
 
@@ -511,6 +532,11 @@ function displayGameStatus() {
 }
 
 function movePoint(e){
+
+    if(yourColor !== currentTurn){
+        return
+    }
+
     const x = e.clientX || e.touches?.[0]?.clientX;
     const y = e.clientY || e.touches?.[0]?.clientY;
     
@@ -622,104 +648,104 @@ function showMoves(piece, pos) {
     }
 }
 
-// function smoothPath(directions,pos, collectMoves = false){
-//     const moves = [];
+function smoothPath(directions,pos, collectMoves = false){
+    const moves = [];
     
-//     for (let i = 0; i < directions.length; i++) {
-//         for (let d = 1; d < 8; d++) {
-//             const e = directions[i];
+    for (let i = 0; i < directions.length; i++) {
+        for (let d = 1; d < 8; d++) {
+            const e = directions[i];
             
-//             const targetCol = pos[0]-1+e[0]*d;
-//             const targetRow = pos[1]-1+e[1]*d;
+            const targetCol = pos[0]-1+e[0]*d;
+            const targetRow = pos[1]-1+e[1]*d;
 
-//             if(targetCol < 0 || targetCol >= 8 || targetRow < 0 || targetRow >= 8) {
-//                 break
-//             }
+            if(targetCol < 0 || targetCol >= 8 || targetRow < 0 || targetRow >= 8) {
+                break
+            }
             
-//             if(sameColor(map[pos[0]-1][pos[1]-1],map[targetCol][targetRow])){
-//                 break
-//             }
+            if(sameColor(map[pos[0]-1][pos[1]-1],map[targetCol][targetRow])){
+                break
+            }
 
-//             if(enemyColor(map[pos[0]-1][pos[1]-1],map[targetCol][targetRow])){
-//                 if (imagesLoaded && pointAttImage.complete && !collectMoves) {
-//                     ctx.drawImage(pointAttImage, ((pos[0]-1)+e[0]*d)*117+75, ((pos[1]-1)+e[1]*d)*103+85, 25, 25);
-//                 }
-//                 if (collectMoves) {
-//                     moves.push([targetCol, targetRow]);
-//                 }
-//                 break
-//             }else{
-//                 if (imagesLoaded && pointImage.complete && !collectMoves) {
-//                     ctx.drawImage(pointImage, ((pos[0]-1)+e[0]*d)*117+75, ((pos[1]-1)+e[1]*d)*103+85, 25, 25);
-//                 }
-//                 if (collectMoves) {
-//                     moves.push([targetCol, targetRow]);
-//                 }
-//             }
-//         }
-//     }
+            if(enemyColor(map[pos[0]-1][pos[1]-1],map[targetCol][targetRow])){
+                if (imagesLoaded && pointAttImage.complete && !collectMoves) {
+                    ctx.drawImage(pointAttImage, ((pos[0]-1)+e[0]*d)*117+75, ((pos[1]-1)+e[1]*d)*103+85, 25, 25);
+                }
+                if (collectMoves) {
+                    moves.push([targetCol, targetRow]);
+                }
+                break
+            }else{
+                if (imagesLoaded && pointImage.complete && !collectMoves) {
+                    ctx.drawImage(pointImage, ((pos[0]-1)+e[0]*d)*117+75, ((pos[1]-1)+e[1]*d)*103+85, 25, 25);
+                }
+                if (collectMoves) {
+                    moves.push([targetCol, targetRow]);
+                }
+            }
+        }
+    }
     
-//     return moves;
-// }
+    return moves;
+}
 
-// function pointPos(directions,pos, collectMoves = false){
-//     const moves = [];
+function pointPos(directions,pos, collectMoves = false){
+    const moves = [];
 
-//     for (let i = 0; i < directions.length; i++) {
-//         const e = directions[i];
+    for (let i = 0; i < directions.length; i++) {
+        const e = directions[i];
         
-//         const targetCol = pos[0]-1+e[0];
-//         const targetRow = pos[1]-1+e[1];
+        const targetCol = pos[0]-1+e[0];
+        const targetRow = pos[1]-1+e[1];
         
-//         if(targetCol < 0 || targetCol >= 8 || targetRow < 0 || targetRow >= 8) {
-//             continue
-//         }
+        if(targetCol < 0 || targetCol >= 8 || targetRow < 0 || targetRow >= 8) {
+            continue
+        }
 
-//         if(sameColor(map[pos[0]-1][pos[1]-1],map[targetCol][targetRow])){
-//             continue
-//         }
+        if(sameColor(map[pos[0]-1][pos[1]-1],map[targetCol][targetRow])){
+            continue
+        }
         
-//         if(enemyColor(map[pos[0]-1][pos[1]-1],map[targetCol][targetRow])){
+        if(enemyColor(map[pos[0]-1][pos[1]-1],map[targetCol][targetRow])){
         
-//             if (imagesLoaded && pointAttImage.complete && !collectMoves) {
-//                 ctx.drawImage(pointAttImage, ((pos[0]-1)+e[0])*117+75, ((pos[1]-1)+e[1])*103+85, 25, 25);
-//             }
-//             if (collectMoves) {
-//                 moves.push([targetCol, targetRow]);
-//             }
-//         }else{
-//             if (imagesLoaded && pointImage.complete && !collectMoves) {
-//                 ctx.drawImage(pointImage, ((pos[0]-1)+e[0])*117+75, ((pos[1]-1)+e[1])*103+85, 25, 25);
-//             }
-//             if (collectMoves) {
-//                 moves.push([targetCol, targetRow]);
-//             }
-//         }
-//     }
+            if (imagesLoaded && pointAttImage.complete && !collectMoves) {
+                ctx.drawImage(pointAttImage, ((pos[0]-1)+e[0])*117+75, ((pos[1]-1)+e[1])*103+85, 25, 25);
+            }
+            if (collectMoves) {
+                moves.push([targetCol, targetRow]);
+            }
+        }else{
+            if (imagesLoaded && pointImage.complete && !collectMoves) {
+                ctx.drawImage(pointImage, ((pos[0]-1)+e[0])*117+75, ((pos[1]-1)+e[1])*103+85, 25, 25);
+            }
+            if (collectMoves) {
+                moves.push([targetCol, targetRow]);
+            }
+        }
+    }
     
-//     return moves;
-// }
-// function sameColor(ch1, ch2) {
-//     if (!ch1 || !ch2) {
-//     return false;
-//     }
+    return moves;
+}
+function sameColor(ch1, ch2) {
+    if (!ch1 || !ch2) {
+    return false;
+    }
 
-//     const isUpper1 = ch1 === ch1.toUpperCase();
-//     const isUpper2 = ch2 === ch2.toUpperCase();
+    const isUpper1 = ch1 === ch1.toUpperCase();
+    const isUpper2 = ch2 === ch2.toUpperCase();
 
-//     return isUpper1 === isUpper2;
-// }
+    return isUpper1 === isUpper2;
+}
 
-// function enemyColor(ch1, ch2) {
-//     if (!ch1 || !ch2) {
-//     return false;
-//     }
+function enemyColor(ch1, ch2) {
+    if (!ch1 || !ch2) {
+    return false;
+    }
 
-//     const isUpper1 = ch1 === ch1.toUpperCase();
-//     const isUpper2 = ch2 === ch2.toUpperCase();
+    const isUpper1 = ch1 === ch1.toUpperCase();
+    const isUpper2 = ch2 === ch2.toUpperCase();
 
-//     return isUpper1 !== isUpper2;
-// }
+    return isUpper1 !== isUpper2;
+}
 
 preloadImages();
 
@@ -773,6 +799,14 @@ socket.on('room-rejoined', function(data) {
         roomId = data.roomId
         playerRole = data.role
         playerColor = data.color
+        yourColor = data.color
+
+        if(data.gameInfo.log){
+            for (let i = 1; i < data.gameInfo.log.length; i++) {
+                logGame(msgs=data.gameInfo.log[i])    
+            }
+        }
+        
         document.getElementById('room-id').textContent = roomId
         document.getElementById('player-color').textContent = playerColor ? (playerColor === 'white' ? 'White' : 'Black') : '-'
         document.getElementById('spectators-count').textContent = data.spectatorsCount || 0
@@ -781,6 +815,14 @@ socket.on('room-rejoined', function(data) {
         if (data.playerColors) {
             console.log('Player colors:', data.playerColors)
         }
+
+
+        countTurn = data.gameInfo.countTurn
+        currentTurn = data.gameInfo.currentTurn
+        gameStatus = data.gameInfo.gameStatus
+        winner = data.gameInfo.winner
+        map = data.gameInfo.map
+        draw()
     }
 })
 
@@ -831,6 +873,22 @@ socket.on('error', function(error) {
         alert(error.message)
     }
 })
+
+socket.on('update-game-state', function(data){
+    countTurn = data.countTurn
+    currentTurn = data.currentTurn
+    gameStatus = data.gameStatus
+    winner = data.winner
+
+    map = data.map
+    console.log(data.log[data.countTurn],data.log,data.countTurn)
+    logGame(data.log[data.countTurn])
+    displayGameStatus();
+    draw()
+
+})
+
+
 
 function checkRole() {
     if (socket.connected) {
