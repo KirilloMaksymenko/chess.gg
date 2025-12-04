@@ -3,34 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chess.gg - Лобі</title>
+    <link rel="stylesheet" href="/css/style_lobby.css">
+    <link href="https://fonts.googleapis.com/css2?family=Covered+By+Your+Grace&family=Rock+Salt&display=swap" rel="stylesheet">
+    <title>Chess.gg</title>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Chess.gg</h1>
-            <div class="client-info">
-                <span>Ваш ID: <strong id="id-client-text">...</strong></span>
-            </div>
+            <img class="logo-img" src="/Source/logo.png" alt="">
         </header>
-
-        <div class="current-room-info" id="current-room" style="display: none;"></div>
 
         <main>
             <div class="rooms-section">
                 <div class="section-header">
-                    <h2>Доступні кімнати</h2>
-                    <button type="button" id="create-room-bt" class="btn-primary">Створити кімнату</button>
+                    <h2>Available rooms: </h2>
+                    <button type="button" id="create-room-bt" class="btn-primary"><img class="bt-add-img" src="/Source/bt_add.png" alt=""></button>
+                      
                 </div>
-                
+                <div class="logwait" id="logwait">
+                    <div class="current-room-info" id="current-room" style="display: none;"></div>
+                </div>
                 <div id="rooms-list" class="list-rooms">
-                    <p class="loading">Завантаження...</p>
+
+                    <p class="loading">Loadding...</p>
                 </div>
             </div>
+            
+            <canvas id="canvas" width="1024" height="1024"></canvas>
+
         </main>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/mini_game.js"></script>
     <script src="/js/client.js"></script>
 </body>
 </html>

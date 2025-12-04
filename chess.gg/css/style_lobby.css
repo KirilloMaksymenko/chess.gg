@@ -1,0 +1,82 @@
+.logo-img{
+    width: 200px;
+    height: auto;
+}
+
+#canvas {
+    max-width: 50vw;
+}
+
+main{
+    display: flex;
+    justify-content: space-between;
+    margin:10px 50px;
+}
+header{
+    margin: 10px;
+}
+body{
+    
+    font-family: "Rock Salt", sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+.logwait{
+    margin: 0 80;
+    margin-bottom: 20px;
+    margin-top: -20px;
+}
+
+.section-header{
+    display: flex;
+    align-items: center
+}
+
+.btn-primary{
+    background: rgba(0, 0, 0, 0);
+    border: none;
+    width: 50px;
+    height: 50px;
+}
+.bt-add-img{
+    width: 30px;
+    margin-bottom: -12px;
+}
+
+.room-list-item{
+    display: flex;
+}
+.panel-room-img{
+    width: 150px;
+    height: 70px;
+    position: absolute;
+    top: 0;
+}
+.text-block{
+    padding-right: 150px;
+    padding-bottom: 70px;
+    position: relative;
+}
+.text-item{
+    position: absolute;
+    top: 10px;
+    left: 15px;
+
+    font-size: 15px;
+}
+.room-id{
+    margin-right: 10px;
+}
+.room-players{
+
+}
+.join-btn{
+    background: rgba(0, 0, 0, 0);
+    border: none;
+    width: 50px;
+    height: 50px;
+}
+.bt-join-img{
+    width: 40px;
+}

@@ -13,7 +13,7 @@ socket.on('disconnect', function() {
 
 socket.on('connect_error', function(error) {
     console.error('Connection error:', error)
-    alert('Помилка підключення до сервера')
+    alert('Server connection error')
 })
 
 socket.on('client-id', function(clientid) {
@@ -36,8 +36,8 @@ socket.on('room-created', function(data) {
         currentRoomId = data.roomId
         const currentRoomElement = document.getElementById("current-room")
         if (currentRoomElement) {
-            const roleText = data.role === 'player' ? 'Гравець' : 'Глядач'
-            currentRoomElement.textContent = `Ваша кімната: ${data.roomId} (Ви: ${roleText}, очікування гравця...)`
+            const roleText = data.role === 'player' ? 'Player' : 'Spectator'
+            currentRoomElement.textContent = `Your room: ${data.roomId} (You: ${roleText}, player expectations...)`
             currentRoomElement.style.display = "block"
         }
         console.log("Room created, currentRoomId set to:", currentRoomId, "role:", data.role, "color:", data.color)
@@ -56,8 +56,8 @@ socket.on('room-joined', function(data) {
         currentRoomId = data.roomId
         const currentRoomElement = document.getElementById("current-room")
         if (currentRoomElement) {
-            const roleText = data.role === 'player' ? 'Гравець' : 'Глядач'
-            currentRoomElement.textContent = `Ви в кімнаті: ${data.roomId} (Ви: ${roleText})`
+            const roleText = data.role === 'player' ? 'Player' : 'Spectator'
+            currentRoomElement.textContent = `You are in the room: ${data.roomId} (You: ${roleText})`
             currentRoomElement.style.display = "block"
         }
         console.log("Room joined, currentRoomId set to:", currentRoomId, "role:", data.role, "color:", data.color)
@@ -106,7 +106,7 @@ socket.on('redirect', function(url) {
 })
 
 socket.on('error', function(error) {
-    alert(error.message || 'Сталася помилка')
+    alert(error.message || 'Error')
     console.error('Error:', error)
 })
 
@@ -120,7 +120,7 @@ function updateRoomsList(rooms) {
     roomsList.innerHTML = ""
 
     if (!rooms || rooms.length === 0) {
-        roomsList.innerHTML = '<p class="no-rooms">Немає доступних кімнат</p>'
+        roomsList.innerHTML = '<p class="no-rooms">No rooms available</p>'
         return
     }
 
@@ -128,11 +128,17 @@ function updateRoomsList(rooms) {
         const roomElement = document.createElement('div')
         roomElement.className = 'room-item'
         roomElement.innerHTML = `
-            <div class="room-info">
-                <span class="room-id">Кімната #${room.roomId}</span>
-                <span class="room-players">${room.playersCount}/${room.maxPlayers} гравців</span>
+            <div class="room-list-item">
+                <div class="text-block">
+                    <img class="panel-room-img" src="/Source/panel.png" alt="">
+                    <div class="text-item">
+                        <span class="room-id">#${room.roomId}</span>
+                        <span class="room-players">${room.playersCount}/${room.maxPlayers}</span>
+                    </div>
+                </div>
+                
+                <button class="join-btn" data-room-id="${room.roomId}"><img class="bt-join-img" src="/Source/bt_join.png" alt=""></button>
             </div>
-            <button class="join-btn" data-room-id="${room.roomId}">Приєднатися</button>
         `
         roomsList.appendChild(roomElement)
     })
@@ -150,7 +156,7 @@ function updateRoomsList(rooms) {
 
 function joinRoom(roomId) {
     if (currentRoomId) {
-        alert('Ви вже знаходитесь в кімнаті')
+        alert('You are already in the room')
         return
     }
     socket.emit('join-room', { roomId: roomId })
@@ -158,7 +164,7 @@ function joinRoom(roomId) {
 
 function createRoom() {
     if (currentRoomId) {
-        alert('Ви вже знаходитесь в кімнаті')
+        alert('You are already in the room.')
         return
     }
     socket.emit('create-room', {})

@@ -1,8 +1,6 @@
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///          GAME FUNCTIONS   /////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+const ctx = document.getElementById("canvas").getContext("2d");
 
-const ctx = document.getElementById("canvas").getContext("2d")
+
 
 let map = [
     ["R","P","","","","","p","r"],
@@ -15,8 +13,37 @@ let map = [
     ["R","P","","","","","p","r"],
 ]
 
+// let map = [
+//     ["R","S","N","K","Q","N","S","R"],
+//     ["P","P","P","P","P","P","P","P"],
+//     ["","","","","","","",""],
+//     ["","","","","","","",""],
+//     ["","","","","","","",""],
+//     ["","","","","","","",""],
+//     ["p","p","p","p","p","p","p","p"],
+//     ["r","s","n","q","k","n","s","r"],
+// ]
+
 const black_p = ["P","R","S","N","K","Q"]
 const white_p = ["p","r","s","n","k","q"]
+
+// const ImgObj = {
+//     "p":new Image(),
+//     "r":new Image(),
+//     "s":new Image(),
+//     "n":new Image(),
+//     "k":new Image(),
+//     "q":new Image(),
+
+//     "P":new Image(),
+//     "R":new Image(),
+//     "S":new Image(),
+//     "N":new Image(),
+//     "K":new Image(),
+//     "Q":new Image(),
+// }
+
+
 
 const ImgLinks = {
     "p":"/Source/Paws/v1/pawn_w.png",
@@ -38,7 +65,6 @@ const ImgObj = {};
 const bgImage = new Image();
 const pointImage = new Image();
 const pointAttImage = new Image();
-const cellImage = new Image();
 
 let imagesLoaded = false;
 
@@ -47,7 +73,6 @@ let validMoves = [];
 let lastTurn = null
 let posSelect = null
 
-let yourColor = null
 let countTurn = 0;
 let currentTurn = 'white'; // 'white'  'black'
 let gameStatus = 'playing'; // 'playing', 'check', 'checkmate', 'stalemate' ,'selectNewPawn'
@@ -56,12 +81,7 @@ let winner = null; // 'white', 'black', null
 function preloadImages() {
     const imagePromises = [];
     
-    if(yourColor==="white"){
-        bgImage.src = "/Source/bg_chess.png"
-    }else{
-        bgImage.src = "/Source/bg_chess_2.png"
-    }
-    
+    bgImage.src = "/Source/bg_chess.png";
     imagePromises.push(new Promise((resolve) => {
         bgImage.onload = resolve;
         bgImage.onerror = resolve; 
@@ -85,12 +105,6 @@ function preloadImages() {
     imagePromises.push(new Promise((resolve) => {
         pointAttImage.onload = resolve;
         pointAttImage.onerror = resolve;
-    }));
-
-    cellImage.src = "/Source/cell.png";
-    imagePromises.push(new Promise((resolve) => {
-        cellImage.onload = resolve;
-        cellImage.onerror = resolve;
     }));
     
     Promise.all(imagePromises).then(() => {
@@ -124,7 +138,7 @@ function draw(){
         }
     }
 
-    if(gameStatus == "selectNewPawn" && yourColor === currentTurn){
+    if(gameStatus == "selectNewPawn"){
         console.log(posSelect)
         const piecSelect = ["r","n","s","q"]
         const piece = map[posSelect[0]][posSelect[1]]
@@ -134,13 +148,12 @@ function draw(){
 
         for (let i = 0; i < 4; i++) {
             console.log(posSelect[0]+50+i*117, posSelect[1])
-            //ctx.rect(dec*117+200+i*117, posSelect[1]*103, 117, 103);
-            //ctx.fillStyle = "lightblue";
+            ctx.rect(dec*117+200+i*117, posSelect[1]*103, 117, 103);
+            ctx.fillStyle = "lightblue";
             //ctx.fill();
-            //ctx.rect(dec*117+200+i*117, posSelect[1]*103, 117, 103);
-            //ctx.stroke();
-            ctx.drawImage(cellImage, dec*117+200+i*117, posSelect[1]*103, 117, 103);
-            ctx.drawImage(ImgObj[piece === piece.toLowerCase() ?  piecSelect[i] : piecSelect[i].toUpperCase()], dec*117+235+117*i, posSelect[1]*103+10, 40, 80);
+            ctx.rect(dec*117+200+i*117, posSelect[1]*103, 117, 103);
+            ctx.stroke();
+            ctx.drawImage(ImgObj[piece === piece.toLowerCase() ?  piecSelect[i] : piecSelect[i].toUpperCase()], dec*117+235+117*i, posSelect[1]*103, 50, 100);
             
         }
     }
@@ -392,8 +405,6 @@ function hasValidMoves(color) {
 function updateGameStatus() {
     const inCheck = isKingInCheck(currentTurn);
     const hasMoves = hasValidMoves(currentTurn);
-
-
     if(gameStatus == 'selectNewPawn'){
         return
     }
@@ -409,47 +420,13 @@ function updateGameStatus() {
     } else {
         gameStatus = 'playing';
     }
-
-    
 }
 
-function logGame(msg){
-    const moveCount = document.getElementById("move-count")
-    
-
-    // if(msgs){   
-    //     msg = msgs
-    // }else{
-    //     const piece = map[pos1[0]][pos1[1]]; 
-    //     const pieceColor = piece === piece.toLowerCase() ? 'w' : 'b'; // Name of Players
-
-    //     msg = countTurn+". "+ pieceColor + ": " + String.fromCharCode(pos1[0]+65) + ""+ (8-pos1[1]) + " -> "+ String.fromCharCode(pos2[0]+65) + ""+ (8-pos2[1])
-    //     if(attck) msg+= " #"+map[pos2[0]][pos2[1]]
-    // }
-
-    var msgSpan = document.createElement('span')
-    msgSpan.textContent = msg;
-
-    var newLine = document.createElement("br")
-    
-    if(lastTurn != null){
-        moveCount.appendChild(msgSpan);
-        moveCount.insertBefore(msgSpan,lastTurn)
-        moveCount.appendChild(newLine);
-        moveCount.insertBefore(newLine,lastTurn)
-        lastTurn = msgSpan
-    }else{
-        moveCount.appendChild(msgSpan);
-        lastTurn = msgSpan
-    }
-    return msg
-}
 
 function selectNewPawn(pos,L){
 
     map[pos[0]][pos[1]] = L;
     gameStatus = 'playing'
-    updateData()
 
 }
 
@@ -462,12 +439,7 @@ function movePiece(fromCol, fromRow, toCol, toRow) {
     if (pieceColor !== currentTurn) {
         return;
     }
-
-
-    msg = countTurn+". "+ pieceColor + ": " + String.fromCharCode(fromCol+65) + ""+ (8-fromRow) + " -> "+ String.fromCharCode(toCol+65) + ""+ (8-toRow)
-    if(enemyColor(map[fromCol][fromRow],map[toCol][toRow])) msg+= " #"+map[toCol][toRow]
-    //const log = logGame([fromCol,fromRow],[toCol,toRow],enemyColor(map[fromCol][fromRow],map[toCol][toRow]))
-
+    
     if(piece =="p" && toRow == 0){
         map[toCol][toRow] = piece;
         gameStatus = 'selectNewPawn'
@@ -492,31 +464,13 @@ function movePiece(fromCol, fromRow, toCol, toRow) {
     selectedPiece = null;
     validMoves = [];
 
-    if(gameStatus != 'selectNewPawn'){
-        currentTurn = currentTurn === 'white' ? 'black' : 'white';
-    }
-    
+    currentTurn = currentTurn === 'white' ? 'black' : 'white';
 
     
-    updateData()
-    
+    updateGameStatus();
+    displayGameStatus();
 
     draw();
-}
-
-function updateData(){
-
-    updateGameStatus();
-    let data = {
-        map: map,
-        countTurn: countTurn,
-        currentTurn: currentTurn,
-        gameStatus: gameStatus,
-        winner: winner,
-        log: msg
-    }
-    socket.emit('game-turn',data)
-    displayGameStatus();
 }
 
 function displayGameStatus() {
@@ -543,11 +497,6 @@ function displayGameStatus() {
 }
 
 function movePoint(e){
-
-    if(yourColor !== currentTurn){
-        return
-    }
-
     const x = e.clientX || e.touches?.[0]?.clientX;
     const y = e.clientY || e.touches?.[0]?.clientY;
     
@@ -758,162 +707,10 @@ function enemyColor(ch1, ch2) {
     return isUpper1 !== isUpper2;
 }
 
+preloadImages();
 
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////        SERVER FUNCTIONS
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-const socket = io()
-let clientId = null
-let roomId = null
-let playerRole = null
-let playerColor = null
-
-const urlParams = new URLSearchParams(window.location.search)
-roomId = urlParams.get('roomId') || localStorage.getItem('roomId')
-
-if (roomId) {
-    document.getElementById('room-id').textContent = roomId
-    localStorage.setItem('roomId', roomId)
-}
-
-socket.on('connect', function() {
-    console.log('Connected to server on game page')
-    if (roomId) {
-        console.log('Rejoining room:', roomId)
-        socket.emit('rejoin-room', { roomId: roomId })
-    }
-})
-
-socket.on('client-id', function(clientid) {
-    console.log('Received client ID on game page:', clientid)
-    clientId = clientid
-    localStorage.setItem('userId', clientId)
-    
-    if (roomId && socket.connected) {
-        console.log('Rejoining room after receiving client ID:', roomId)
-        socket.emit('rejoin-room', { roomId: roomId })
-    }
-})
-
-socket.on('room-rejoined', function(data) {
-    console.log('Successfully rejoined room:', data)
-    if (data && data.roomId) {
-        roomId = data.roomId
-        playerRole = data.role
-        playerColor = data.color
-        yourColor = data.color
-
-        if(data.gameInfo.log){
-            for (let i = 1; i < data.gameInfo.log.length; i++) {
-                logGame(msgs=data.gameInfo.log[i])    
-            }
-        }
-        
-        document.getElementById('room-id').textContent = roomId
-        document.getElementById('player-color').textContent = playerColor ? (playerColor === 'white' ? 'White' : 'Black') : '-'
-        document.getElementById('spectators-count').textContent = data.spectatorsCount || 0
-        console.log(`Room ${roomId} has ${data.playersCount} players and ${data.spectatorsCount} spectators`)
-        console.log(`Your role: ${playerRole}, color: ${playerColor}`)
-        if (data.playerColors) {
-            console.log('Player colors:', data.playerColors)
-        }
-
-
-        countTurn = data.gameInfo.countTurn
-        currentTurn = data.gameInfo.currentTurn
-        gameStatus = data.gameInfo.gameStatus
-        winner = data.gameInfo.winner
-        map = data.gameInfo.map
-        
-        preloadImages();
-
-        setTimeout(() => {
-            updateGameStatus();
-            displayGameStatus();
-        }, 100);
-        draw()
-    }
-})
-
-socket.on('role-info', function(data) {
-    console.log('Role info received:', data)
-    if (data) {
-        playerRole = data.role
-        playerColor = data.color
-        document.getElementById('player-color').textContent = playerColor ? (playerColor === 'white' ? 'White' : 'Black') : '-'
-        if (data.roomId) {
-            roomId = data.roomId
-            document.getElementById('room-id').textContent = roomId
-        }
-    }
-})
-
-socket.on('color-info', function(data) {
-    console.log('Color info received:', data)
-    if (data) {
-        playerColor = data.color
-        playerRole = data.role
-        document.getElementById('player-color').textContent = playerColor ? (playerColor === 'white' ? 'White' : 'Black') : '-'
-        if (data.roomId) {
-            roomId = data.roomId
-            document.getElementById('room-id').textContent = roomId
-        }
-    }
-})
-
-socket.on('player-color-assigned', function(data) {
-    console.log('Player color assigned:', data)
-    if (data) {
-        playerColor = data.color
-        document.getElementById('player-color').textContent = playerColor === 'white' ? 'White' : 'Black'
-        console.log(`You are player ${data.playerNumber} with color ${playerColor}`)
-    }
-})
-
-socket.on('player-rejoined', function(data) {
-    console.log('Another player rejoined:', data)
-})
-
-socket.on('error', function(error) {
-    console.error('Socket error:', error)
-    if (error.message) {
-        alert(error.message)
-    }
-})
-
-socket.on('update-game-state', function(data){
-    countTurn = data.countTurn
-    currentTurn = data.currentTurn
-    gameStatus = data.gameStatus
-    winner = data.winner
-
-    map = data.map
-    console.log(data.log[data.countTurn],data.log,data.countTurn)
-    logGame(data.log[data.countTurn])
+setTimeout(() => {
+    updateGameStatus();
     displayGameStatus();
-    draw()
-
-})
-
-
-
-function checkRole() {
-    if (socket.connected) {
-        socket.emit('get-role')
-        console.log('Requesting role information...')
-    } else {
-        alert('Не підключено до сервера')
-    }
-}
-
-function checkColor() {
-    if (socket.connected) {
-        socket.emit('get-color')
-        console.log('Requesting color information...')
-    } else {
-        alert('Не підключено до сервера')
-    }
-}
-
+}, 100);
