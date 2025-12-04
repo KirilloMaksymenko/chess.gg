@@ -460,7 +460,7 @@ function movePiece(fromCol, fromRow, toCol, toRow) {
 
 
     msg = countTurn+". "+ pieceColor + ": " + String.fromCharCode(fromCol+65) + ""+ (8-fromRow) + " -> "+ String.fromCharCode(toCol+65) + ""+ (8-toRow)
-    if(enemyColor(map[fromCol][fromRow])) msg+= " #"+map[toCol][toRow]
+    if(enemyColor(map[fromCol][fromRow],map[toCol][toRow])) msg+= " #"+map[toCol][toRow]
     //const log = logGame([fromCol,fromRow],[toCol,toRow],enemyColor(map[fromCol][fromRow],map[toCol][toRow]))
 
     if(piece =="p" && toRow == 0){
