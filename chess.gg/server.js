@@ -90,14 +90,14 @@ function getAvailableRooms() {
     const availableRooms = []
     rooms.forEach((room, roomId) => {
         const playersCount = room.players ? room.players.length : 0
-        if (playersCount < 2) {
+        // if (playersCount < 2) {
             availableRooms.push({
                 roomId: roomId,
                 playersCount: playersCount,
                 maxPlayers: 2,
                 spectatorsCount: room.spectators ? room.spectators.length : 0
             })
-        }
+        // }
     })
     //console.log(`getAvailableRooms: found ${availableRooms.length} rooms out of ${rooms.size} total`)
     return availableRooms
@@ -130,7 +130,7 @@ function cleanupRoom(roomId) {
     const createdAt = room.createdAt || 0
     const roomAgeMs = Date.now() - createdAt
 
-    const EMPTY_ROOM_TIMEOUT_MS = 10 * 60 * 1000 
+    const EMPTY_ROOM_TIMEOUT_MS =   5 * 1000 
 
     if (playersCount === 0 && spectatorsCount === 0 && roomAgeMs > EMPTY_ROOM_TIMEOUT_MS) {
         rooms.delete(roomId)

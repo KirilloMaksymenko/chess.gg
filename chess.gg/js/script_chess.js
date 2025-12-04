@@ -119,7 +119,7 @@ function draw(){
         }
     }
 
-    if(gameStatus == "selectNewPawn"){
+    if(gameStatus == "selectNewPawn" && yourColor === currentTurn){
         console.log(posSelect)
         const piecSelect = ["r","n","s","q"]
         const piece = map[posSelect[0]][posSelect[1]]
@@ -444,6 +444,7 @@ function selectNewPawn(pos,L){
 
     map[pos[0]][pos[1]] = L;
     gameStatus = 'playing'
+    updateData()
 
 }
 
@@ -486,12 +487,21 @@ function movePiece(fromCol, fromRow, toCol, toRow) {
     selectedPiece = null;
     validMoves = [];
 
-    currentTurn = currentTurn === 'white' ? 'black' : 'white';
-
+    if(gameStatus != 'selectNewPawn'){
+        currentTurn = currentTurn === 'white' ? 'black' : 'white';
+    }
     
 
-    updateGameStatus();
+    
+    updateData()
+    
 
+    draw();
+}
+
+function updateData(){
+
+    updateGameStatus();
     let data = {
         map: map,
         countTurn: countTurn,
@@ -500,12 +510,8 @@ function movePiece(fromCol, fromRow, toCol, toRow) {
         winner: winner,
         log: msg
     }
-
     socket.emit('game-turn',data)
-
     displayGameStatus();
-
-    draw();
 }
 
 function displayGameStatus() {
@@ -831,8 +837,7 @@ socket.on('role-info', function(data) {
     if (data) {
         playerRole = data.role
         playerColor = data.color
-        document.getElementById('player-role').textContent = playerRole === 'player' ? 'Гравець' : 'Глядач'
-        document.getElementById('player-color').textContent = playerColor ? (playerColor === 'white' ? 'Білі' : 'Чорні') : '-'
+        document.getElementById('player-color').textContent = playerColor ? (playerColor === 'white' ? 'White' : 'Black') : '-'
         if (data.roomId) {
             roomId = data.roomId
             document.getElementById('room-id').textContent = roomId
@@ -845,8 +850,7 @@ socket.on('color-info', function(data) {
     if (data) {
         playerColor = data.color
         playerRole = data.role
-        document.getElementById('player-color').textContent = playerColor ? (playerColor === 'white' ? 'Білі' : 'Чорні') : '-'
-        document.getElementById('player-role').textContent = playerRole === 'player' ? 'Гравець' : 'Глядач'
+        document.getElementById('player-color').textContent = playerColor ? (playerColor === 'white' ? 'White' : 'Black') : '-'
         if (data.roomId) {
             roomId = data.roomId
             document.getElementById('room-id').textContent = roomId
@@ -858,7 +862,7 @@ socket.on('player-color-assigned', function(data) {
     console.log('Player color assigned:', data)
     if (data) {
         playerColor = data.color
-        document.getElementById('player-color').textContent = playerColor === 'white' ? 'Білі' : 'Чорні'
+        document.getElementById('player-color').textContent = playerColor === 'white' ? 'White' : 'Black'
         console.log(`You are player ${data.playerNumber} with color ${playerColor}`)
     }
 })
@@ -908,7 +912,3 @@ function checkColor() {
     }
 }
 
-const storedUserId = localStorage.getItem('userId')
-if (storedUserId) {
-    document.getElementById('player-id').textContent = storedUserId + ' (оновлюється...)'
-}
