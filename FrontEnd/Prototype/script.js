@@ -1,8 +1,7 @@
 const ctx = document.getElementById("canvas").getContext("2d");
 
-
-
-let map = [
+// Стартова позиція дошки
+const START_POSITION = [
     ["R","P","","","","","p","r"],
     ["N","P","","","","","p","n"],
     ["S","P","","","","","p","s"],
@@ -11,7 +10,10 @@ let map = [
     ["S","P","","","","","p","s"],
     ["N","P","","","","","p","n"],
     ["R","P","","","","","p","r"],
-]
+];
+
+// Поточний стан дошки (клон стартової позиції)
+let map = START_POSITION.map(col => [...col]);
 
 // let map = [
 //     ["R","S","N","K","Q","N","S","R"],
@@ -73,6 +75,38 @@ let validMoves = [];
 let lastTurn = null
 let posSelect = null
 
+// Змінні для drag and drop
+let isDragging = false;
+let dragPiece = null;
+let dragStartPos = null;
+let dragOffset = { x: 0, y: 0 };
+let draggedPieceImage = null;
+
+// Змінні для анімації завершення перетягування
+let moveAnimation = null;
+let animationStartTime = 0;
+const ANIMATION_DURATION = 800; // тривалість анімації в мілісекундах
+
+// Режим гри проти бота
+let playAgainstBot = false;
+let botColor = 'black';
+let botDifficulty = 'easy';
+let hintMove = null;
+let botThinking = false;
+
+// Значення фігур для оцінки
+const pieceValues = {
+    'p': 1,
+    'n': 3,
+    's': 3,
+    'r': 5,
+    'q': 9,
+    'k': 100
+};
+
+let playerName = 'White';
+let activeEmotes = [];
+
 let countTurn = 0;
 let currentTurn = 'white'; // 'white'  'black'
 let gameStatus = 'playing'; // 'playing', 'check', 'checkmate', 'stalemate' ,'selectNewPawn'
@@ -113,6 +147,35 @@ function preloadImages() {
     });
 }
 
+// Скидання стану гри
+function resetGameState() {
+    map = START_POSITION.map(col => [...col]);
+    selectedPiece = null;
+    validMoves = [];
+    lastTurn = null;
+    posSelect = null;
+    isDragging = false;
+    dragPiece = null;
+    dragStartPos = null;
+    dragOffset = { x: 0, y: 0 };
+    draggedPieceImage = null;
+    moveAnimation = null;
+    hintMove = null;
+    countTurn = 0;
+    currentTurn = 'white';
+    gameStatus = 'playing';
+    winner = null;
+    playerName = 'White';
+
+    const moveCount = document.getElementById("move-count");
+    if (moveCount) {
+        moveCount.innerHTML = "";
+    }
+    updateGameStatus();
+    displayGameStatus();
+    draw();
+}
+
 function draw(){
     if (!imagesLoaded) {
         return;
@@ -128,14 +191,97 @@ function draw(){
     const cellWidth = 117;
     const cellHeight = 103;
     
+    // Малюємо всі фігури, крім тієї що перетягується
     for (let row = 0; row < 8; row++) {
         for (let colom = 0; colom < 8; colom++) {
             let piece = map[colom][row];
+            
+            // Пропускаємо фігуру яку зараз перетягуємо
+            if (isDragging && dragStartPos && colom === dragStartPos[0] && row === dragStartPos[1]) {
+                continue;
+            }
             
             if(piece && ImgObj[piece]){
                 ctx.drawImage(ImgObj[piece], 60+117*colom, 103*row+20, 50, 100);
             }
         }
+    }
+
+    // Малюємо валідні ходи під час перетягування або коли фігура вибрана через click
+    if (validMoves.length > 0 && (isDragging || selectedPiece !== null)) {
+        let pieceToShow = null;
+        
+        if (isDragging && dragPiece) {
+            // Під час перетягування використовуємо dragPiece
+            pieceToShow = dragPiece;
+        } else if (selectedPiece !== null) {
+            // Коли фігура вибрана через click, використовуємо selectedPiece
+            const [selectedCol, selectedRow] = selectedPiece;
+            pieceToShow = map[selectedCol][selectedRow];
+        }
+        
+        if (pieceToShow) {
+            validMoves.forEach(([moveCol, moveRow]) => {
+                const targetPiece = map[moveCol][moveRow];
+                
+                if (targetPiece && enemyColor(pieceToShow, targetPiece)) {
+                    // Якщо на клітинці ворожа фігура - показуємо точку атаки
+                    if (imagesLoaded && pointAttImage.complete) {
+                        ctx.drawImage(pointAttImage, moveCol*117+75, moveRow*103+85, 25, 25);
+                    }
+                } else {
+                    // Якщо клітинка порожня - показуємо звичайну точку
+                    if (imagesLoaded && pointImage.complete) {
+                        ctx.drawImage(pointImage, moveCol*117+75, moveRow*103+85, 25, 25);
+                    }
+                }
+            });
+        }
+    }
+
+    // Підсвітка підказки (hint)
+    if (hintMove) {
+        const fromX = boardStartX + hintMove.fromCol * 117;
+        const fromY = boardStartY + hintMove.fromRow * 103;
+        const toX = boardStartX + hintMove.toCol * 117;
+        const toY = boardStartY + hintMove.toRow * 103;
+
+        ctx.fillStyle = 'rgba(0, 150, 255, 0.18)';
+        ctx.fillRect(fromX, fromY, 117, 103);
+        ctx.fillRect(toX, toY, 117, 103);
+
+        ctx.strokeStyle = 'rgba(0, 150, 255, 0.6)';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(fromX + 2, fromY + 2, 117 - 4, 103 - 4);
+        ctx.strokeRect(toX + 2, toY + 2, 117 - 4, 103 - 4);
+    }
+
+    // Малюємо фігуру що перетягується поверх всього
+    if (isDragging && dragPiece && draggedPieceImage) {
+        const canvas = document.getElementById("canvas");
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        
+        // Отримуємо позицію курсора на canvas
+        const mouseX = (dragOffset.x - rect.left) * scaleX;
+        const mouseY = (dragOffset.y - rect.top) * scaleY;
+        
+        // Малюємо фігуру з тінню для ефекту перетягування
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetX = 5;
+        ctx.shadowOffsetY = 5;
+        ctx.drawImage(draggedPieceImage, mouseX - 25, mouseY - 50, 50, 100);
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+    }
+
+    // Малюємо анімацію завершення ходу
+    if (moveAnimation) {
+        drawMoveAnimation();
     }
 
     if(gameStatus == "selectNewPawn"){
@@ -225,11 +371,292 @@ function getCellSelect(x, y){
 }
 
 const canvas = document.getElementById("canvas");
-canvas.addEventListener("click", movePoint, true);
-canvas.addEventListener("touchstart", (e) => {
+
+// ========== DRAG AND DROP СИСТЕМА ==========
+
+// Обробка початку перетягування (mouse)
+canvas.addEventListener("mousedown", handleDragStart, true);
+
+// Обробка перетягування (mouse)
+canvas.addEventListener("mousemove", handleDragMove, true);
+
+// Обробка завершення перетягування (mouse)
+canvas.addEventListener("mouseup", handleDragEnd, true);
+canvas.addEventListener("mouseleave", handleDragEnd, true);
+
+// Обробка початку перетягування (touch)
+canvas.addEventListener("touchstart", handleDragStart, true);
+
+// Обробка перетягування (touch)
+canvas.addEventListener("touchmove", handleDragMove, true);
+
+// Обробка завершення перетягування (touch)
+canvas.addEventListener("touchend", handleDragEnd, true);
+canvas.addEventListener("touchcancel", handleDragEnd, true);
+
+// Функція початку перетягування
+function handleDragStart(e) {
+    if (playAgainstBot && (currentTurn === botColor || botThinking || gameStatus !== 'playing')) {
+        return;
+    }
+
+    if (gameStatus === 'selectNewPawn') {
+        // Якщо вибираємо нову фігуру для пішака, використовуємо стару систему
+        e.preventDefault();
+        movePoint(e);
+        return;
+    }
+
+    const x = e.clientX || (e.touches && e.touches[0]?.clientX);
+    const y = e.clientY || (e.touches && e.touches[0]?.clientY);
+    
+    if (!x || !y) {
+        return;
+    }
+
+    const cell = getCell(x, y);
+    if (cell === -1) {
+        return;
+    }
+
+    const col = cell[0] - 1;
+    const row = cell[1] - 1;
+    const piece = map[col][row];
+
+    // Перевіряємо чи є фігура і чи це хід поточного гравця
+    if (!piece) {
+        return;
+    }
+
+    const pieceColor = piece === piece.toLowerCase() ? 'white' : 'black';
+    if (pieceColor !== currentTurn) {
+        return;
+    }
+
+    // Починаємо перетягування
+    isDragging = true;
+    dragPiece = piece;
+    dragStartPos = [col, row];
+    dragOffset = { x: x, y: y };
+
+    // Створюємо зображення фігури для перетягування
+    if (ImgObj[piece]) {
+        draggedPieceImage = ImgObj[piece];
+    }
+
+    // Визначаємо валідні ходи
+    selectedPiece = [col, row];
+    validMoves = getValidMovesWithCheck(piece, cell);
+    
+    // Малюємо дошку з валідними ходами (точки будуть показані в draw())
+    draw();
+}
+
+// Функція перетягування
+function handleDragMove(e) {
+    if (!isDragging) {
+        return;
+    }
+
     e.preventDefault();
-    movePoint(e);
-}, true);
+    
+    const x = e.clientX || (e.touches && e.touches[0]?.clientX);
+    const y = e.clientY || (e.touches && e.touches[0]?.clientY);
+    
+    if (!x || !y) {
+        return;
+    }
+
+    dragOffset = { x: x, y: y };
+    draw();
+}
+
+// Функція завершення перетягування
+function handleDragEnd(e) {
+    if (!isDragging) {
+        return;
+    }
+
+    e.preventDefault();
+
+    const x = e.clientX || (e.changedTouches && e.changedTouches[0]?.clientX);
+    const y = e.clientY || (e.changedTouches && e.changedTouches[0]?.clientY);
+    
+    if (!x || !y) {
+        // Якщо координати недоступні, просто скасовуємо перетягування
+        cancelDrag();
+        return;
+    }
+
+    const cell = getCell(x, y);
+    
+    if (cell === -1) {
+        // Якщо випустили поза дошкою, скасовуємо
+        cancelDrag();
+        return;
+    }
+
+    const col = cell[0] - 1;
+    const row = cell[1] - 1;
+
+    // Перевіряємо чи це валідний хід
+    if (isValidMove(col, row)) {
+        // Скидаємо стан перетягування перед анімацією
+        const fromCol = dragStartPos[0];
+        const fromRow = dragStartPos[1];
+        
+        isDragging = false;
+        dragPiece = null;
+        dragStartPos = null;
+        draggedPieceImage = null;
+        selectedPiece = null;
+        validMoves = [];
+        
+        // Запускаємо анімацію та виконуємо хід
+        startMoveAnimation(col, row);
+        
+        // Виконуємо хід одразу (анімація буде відображатись поверх)
+        movePiece(fromCol, fromRow, col, row);
+    } else {
+        // Якщо хід невалідний, скасовуємо
+        cancelDrag();
+    }
+}
+
+// Функція скасування перетягування
+function cancelDrag() {
+    isDragging = false;
+    dragPiece = null;
+    dragStartPos = null;
+    draggedPieceImage = null;
+    selectedPiece = null;
+    validMoves = [];
+    draw();
+}
+
+// Функція запуску анімації завершення ходу
+function startMoveAnimation(col, row) {
+    moveAnimation = {
+        col: col,
+        row: row,
+        particles: []
+    };
+    
+    // Створюємо частинки для анімації
+    const centerX = col * 117 + 60 + 25; // центр клітинки по X
+    const centerY = row * 103 + 20 + 50; // центр клітинки по Y
+    
+    // Створюємо 20 частинок що розлітаються
+    for (let i = 0; i < 20; i++) {
+        const angle = (Math.PI * 2 * i) / 20;
+        const speed = 2 + Math.random() * 3;
+        moveAnimation.particles.push({
+            x: centerX,
+            y: centerY,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            size: 3 + Math.random() * 4,
+            life: 1.0,
+            decay: 0.02 + Math.random() * 0.02
+        });
+    }
+    
+    animationStartTime = Date.now();
+    
+    // Запускаємо анімацію
+    if (!animationFrameId) {
+        animateMove();
+    }
+}
+
+// Функція малювання анімації
+function drawMoveAnimation() {
+    if (!moveAnimation) return;
+    
+    const elapsed = Date.now() - animationStartTime;
+    const progress = Math.min(elapsed / ANIMATION_DURATION, 1);
+    
+    const centerX = moveAnimation.col * 117 + 60 + 25;
+    const centerY = moveAnimation.row * 103 + 20 + 50;
+    const cellWidth = 117;
+    const cellHeight = 103;
+    
+    // Малюємо хвилі що розширюються
+    const waveCount = 3;
+    for (let i = 0; i < waveCount; i++) {
+        const waveProgress = (progress - i * 0.2) * 1.5;
+        if (waveProgress > 0 && waveProgress < 1) {
+            const radius = waveProgress * Math.max(cellWidth, cellHeight) * 0.8;
+            const alpha = 1 - waveProgress;
+            
+            ctx.strokeStyle = `rgba(64, 150, 255, ${alpha * 0.6})`;
+            ctx.lineWidth = 3 - waveProgress * 2;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+    }
+    
+    // Малюємо світіння в центрі
+    const glowSize = 30 + Math.sin(progress * Math.PI * 4) * 10;
+    const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, glowSize);
+    gradient.addColorStop(0, `rgba(100, 180, 255, ${0.8 * (1 - progress)})`);
+    gradient.addColorStop(0.5, `rgba(64, 150, 255, ${0.4 * (1 - progress)})`);
+    gradient.addColorStop(1, `rgba(64, 150, 255, 0)`);
+    
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, glowSize, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Малюємо частинки
+    moveAnimation.particles.forEach(particle => {
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+        particle.life -= particle.decay;
+        
+        if (particle.life > 0) {
+            const alpha = particle.life;
+            ctx.fillStyle = `rgba(64, 150, 255, ${alpha})`;
+            ctx.beginPath();
+            ctx.arc(particle.x, particle.y, particle.size * alpha, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Додаємо світіння навколо частинки
+            ctx.shadowColor = `rgba(64, 150, 255, ${alpha * 0.5})`;
+            ctx.shadowBlur = 5;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+    });
+    
+    // Видаляємо мертві частинки
+    moveAnimation.particles = moveAnimation.particles.filter(p => p.life > 0);
+    
+    // Якщо анімація завершилась, очищаємо
+    if (progress >= 1) {
+        moveAnimation = null;
+    }
+}
+
+// Функція анімації (requestAnimationFrame)
+let animationFrameId = null;
+
+function animateMove() {
+    if (moveAnimation) {
+        draw();
+        animationFrameId = requestAnimationFrame(animateMove);
+    } else {
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+    }
+}
+
+// ========== СТАРА СИСТЕМА CLICK (залишаємо для сумісності) ==========
+// Використовується тільки для вибору нової фігури пішака
+canvas.addEventListener("click", movePoint, true);
 
 function pawnMoves(piece, pos, collectMoves = false) {
     const moves = [];
@@ -495,12 +922,21 @@ function movePiece(fromCol, fromRow, toCol, toRow) {
     validMoves = [];
 
     currentTurn = currentTurn === 'white' ? 'black' : 'white';
+    
+    // Mettre à jour le nom du joueur pour les émotes
+    playerName = currentTurn === 'white' ? 'White' : 'Black';
 
     
     updateGameStatus();
     displayGameStatus();
 
+    // Скидаємо підказку після ходу
+    hintMove = null;
+
     draw();
+
+    // Якщо граємо проти бота і настав його хід — запускаємо хід бота
+    maybePlayBotTurn();
 }
 
 function displayGameStatus() {
@@ -526,7 +962,183 @@ function displayGameStatus() {
     }
 }
 
+// --------- Генерація ходів та бот ---------
+
+function getPieceValue(piece) {
+    if (!piece) return 0;
+    const key = piece.toLowerCase();
+    return pieceValues[key] || 0;
+}
+
+function evaluateBoard() {
+    let score = 0;
+    for (let c = 0; c < 8; c++) {
+        for (let r = 0; r < 8; r++) {
+            const piece = map[c][r];
+            if (!piece) continue;
+            const value = getPieceValue(piece);
+            if (piece === piece.toLowerCase()) {
+                score += value; // білий
+            } else {
+                score -= value; // чорний
+            }
+        }
+    }
+    return score;
+}
+
+function generateAllMoves(color) {
+    const moves = [];
+    for (let c = 0; c < 8; c++) {
+        for (let r = 0; r < 8; r++) {
+            const piece = map[c][r];
+            if (!piece) continue;
+            const pieceColor = piece === piece.toLowerCase() ? 'white' : 'black';
+            if (pieceColor !== color) continue;
+
+            const legal = getValidMovesWithCheck(piece, [c + 1, r + 1]);
+            legal.forEach(([toCol, toRow]) => {
+                moves.push({
+                    from: [c, r],
+                    to: [toCol, toRow],
+                    piece
+                });
+            });
+        }
+    }
+    return moves;
+}
+
+function simulateMove(move, callback) {
+    const [fromCol, fromRow] = move.from;
+    const [toCol, toRow] = move.to;
+    const piece = map[fromCol][fromRow];
+    const captured = map[toCol][toRow];
+
+    map[toCol][toRow] = piece;
+    map[fromCol][fromRow] = "";
+
+    const result = callback();
+
+    // revert
+    map[fromCol][fromRow] = piece;
+    map[toCol][toRow] = captured;
+    return result;
+}
+
+function minimax(depth, colorToMove, alpha, beta) {
+    const moves = generateAllMoves(colorToMove);
+
+    // Якщо немає ходів — мат або пат
+    if (moves.length === 0) {
+        const inCheck = isKingInCheck(colorToMove);
+        if (inCheck) {
+            // Мат для поточного гравця
+            return colorToMove === 'white' ? -9999 : 9999;
+        }
+        return 0; // пат
+    }
+
+    if (depth === 0) {
+        return evaluateBoard();
+    }
+
+    const maximizing = colorToMove === 'white';
+    let bestScore = maximizing ? -Infinity : Infinity;
+    const nextColor = colorToMove === 'white' ? 'black' : 'white';
+
+    for (const move of moves) {
+        const score = simulateMove(move, () => minimax(depth - 1, nextColor, alpha, beta));
+        if (maximizing) {
+            bestScore = Math.max(bestScore, score);
+            alpha = Math.max(alpha, bestScore);
+        } else {
+            bestScore = Math.min(bestScore, score);
+            beta = Math.min(beta, bestScore);
+        }
+        if (beta <= alpha) break;
+    }
+
+    return bestScore;
+}
+
+function chooseBotMove(difficulty) {
+    const moves = generateAllMoves(botColor);
+    if (moves.length === 0) return null;
+
+    if (difficulty === 'easy') {
+        return moves[Math.floor(Math.random() * moves.length)];
+    }
+
+    // Medium: оцінка за захопленням / матеріалом після ходу
+    if (difficulty === 'medium') {
+        let best = null;
+        let bestScore = Infinity; // бот грає чорними і мінімізує
+        moves.forEach(move => {
+            const score = simulateMove(move, () => evaluateBoard());
+            if (score < bestScore || (score === bestScore && Math.random() > 0.5)) {
+                bestScore = score;
+                best = move;
+            }
+        });
+        return best || moves[0];
+    }
+
+    // Hard: глибина 2 мінімакс
+    let bestMove = null;
+    let bestScore = Infinity;
+    for (const move of moves) {
+        const score = simulateMove(move, () => minimax(2, 'white', -Infinity, Infinity));
+        if (score < bestScore) {
+            bestScore = score;
+            bestMove = move;
+        }
+    }
+    return bestMove || moves[0];
+}
+
+function suggestHintForPlayer(color) {
+    const moves = generateAllMoves(color);
+    if (moves.length === 0) return null;
+    // Використовуємо "hard" логіку незалежно від складності
+    const maximizing = color === 'white';
+    let bestMove = null;
+    let bestScore = maximizing ? -Infinity : Infinity;
+    for (const move of moves) {
+        const score = simulateMove(move, () => minimax(2, color === 'white' ? 'black' : 'white', -Infinity, Infinity));
+        if ((maximizing && score > bestScore) || (!maximizing && score < bestScore)) {
+            bestScore = score;
+            bestMove = move;
+        }
+    }
+    return bestMove || moves[0];
+}
+
+function maybePlayBotTurn() {
+    if (!playAgainstBot) return;
+    if (currentTurn !== botColor) return;
+    if (gameStatus !== 'playing') return;
+    if (botThinking) return;
+
+    botThinking = true;
+    setTimeout(() => {
+        const move = chooseBotMove(botDifficulty);
+        if (move) {
+            movePiece(move.from[0], move.from[1], move.to[0], move.to[1]);
+        }
+        botThinking = false;
+    }, 250);
+}
+
 function movePoint(e){
+    // Якщо зараз відбувається перетягування, ігноруємо click
+    if (isDragging) {
+        return;
+    }
+    if (playAgainstBot && (currentTurn === botColor || botThinking || gameStatus !== 'playing')) {
+        return;
+    }
+
     const x = e.clientX || e.touches?.[0]?.clientX;
     const y = e.clientY || e.touches?.[0]?.clientY;
     
@@ -744,3 +1356,245 @@ setTimeout(() => {
     updateGameStatus();
     displayGameStatus();
 }, 100);
+
+// ========== SYSTÈME D'ÉMOTES (Style Clash Royale) ==========
+
+// Mapping des émotes avec messages thématiques échecs
+const emoteMap = {
+    'checkmate': { emoji: '♔', message: 'Get checkmated!', color: '#ff4757' },
+    'check': { emoji: '⚡', message: 'Check!', color: '#ffa502' },
+    'good-move': { emoji: '✨', message: 'Good move!', color: '#2ed573' },
+    'well-played': { emoji: '👑', message: 'Well played!', color: '#ffd700' },
+    'oops': { emoji: '😅', message: 'Oops!', color: '#ff6348' },
+    'nice-try': { emoji: '💪', message: 'Nice try!', color: '#5f27cd' },
+    'brilliant': { emoji: '🌟', message: 'Brilliant!', color: '#00d2d3' },
+    'respect': { emoji: '🤝', message: 'Respect!', color: '#3742fa' }
+};
+
+// Initialisation de la barre d'émotes
+function initEmoteBar() {
+    const emoteButtons = document.querySelectorAll('.emote-btn');
+    
+    emoteButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const emoteType = this.getAttribute('data-emote');
+            sendEmote(emoteType);
+        });
+        
+        // Animation au survol
+        button.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.15) rotate(5deg)';
+        });
+        
+        button.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1) rotate(0deg)';
+        });
+    });
+}
+
+// Fonction pour envoyer une émoji (sera étendue avec Socket.IO)
+function sendEmote(emoteType) {
+    const emote = emoteMap[emoteType];
+    if (!emote) return;
+    
+    // Pour l'instant, affichage local
+    // Plus tard: socket.emit('emote', { emoteType, playerName });
+    
+    displayEmote(emote, playerName);
+}
+
+// Fonction pour recevoir une émoji (sera étendue avec Socket.IO)
+function receiveEmote(emoteType, fromPlayer) {
+    const emote = emoteMap[emoteType];
+    if (!emote) return;
+    
+    displayEmote(emote, fromPlayer);
+}
+
+// Fonction pour afficher une émoji à gauche du plateau
+function displayEmote(emoteData, playerName) {
+    const displayArea = document.getElementById('emote-display-area');
+    if (!displayArea) return;
+    
+    // Position aléatoire à gauche du plateau
+    const canvas = document.getElementById('canvas');
+    const canvasRect = canvas.getBoundingClientRect();
+    const displayAreaRect = displayArea.getBoundingClientRect();
+    
+    // Position aléatoire verticale dans la zone d'affichage
+    const maxY = displayAreaRect.height - 120; // Réserve pour la taille de l'émoji + message
+    const randomY = Math.random() * Math.max(maxY, 100);
+    
+    // Créer le conteneur principal
+    const emoteContainer = document.createElement('div');
+    emoteContainer.className = 'emote-display-container';
+    emoteContainer.style.cssText = `
+        position: absolute;
+        left: 10px;
+        top: ${randomY}px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        pointer-events: none;
+    `;
+    
+    // Créer l'élément émoji
+    const emoteElement = document.createElement('div');
+    emoteElement.className = 'emote-display';
+    emoteElement.textContent = emoteData.emoji;
+    emoteElement.style.cssText = `
+        font-size: 60px;
+        filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+        animation: emoteAppear 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+    `;
+    
+    // Créer le message
+    const messageElement = document.createElement('div');
+    messageElement.className = 'emote-message';
+    messageElement.textContent = emoteData.message;
+    messageElement.style.cssText = `
+        font-size: 14px;
+        font-weight: bold;
+        color: ${emoteData.color};
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.8),
+                     0 0 10px ${emoteData.color}40;
+        padding: 4px 12px;
+        background: rgba(0, 0, 0, 0.7);
+        border-radius: 12px;
+        border: 2px solid ${emoteData.color};
+        white-space: nowrap;
+        animation: messageAppear 1.2s ease-out forwards;
+    `;
+    
+    // Ajouter le nom du joueur
+    const playerLabel = document.createElement('div');
+    playerLabel.textContent = playerName;
+    playerLabel.style.cssText = `
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.9);
+        text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+        font-weight: bold;
+        animation: fadeInOut 1.2s ease-out forwards;
+    `;
+    
+    emoteContainer.appendChild(emoteElement);
+    emoteContainer.appendChild(messageElement);
+    emoteContainer.appendChild(playerLabel);
+    
+    displayArea.appendChild(emoteContainer);
+    
+    // Créer des particules autour de l'émoji avec la couleur de l'émoji
+    createEmoteParticles(displayAreaRect.left + 10, displayAreaRect.top + randomY + 30, emoteData.color);
+    
+    // Supprimer après l'animation
+    setTimeout(() => {
+        emoteContainer.remove();
+    }, 1200);
+}
+
+// Fonction pour créer des particules autour de l'émoji
+function createEmoteParticles(x, y, emoteColor) {
+    const particleCount = 15;
+    
+    for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'emote-particle';
+        
+        const angle = (Math.PI * 2 * i) / particleCount;
+        const distance = 40 + Math.random() * 30;
+        const tx = Math.cos(angle) * distance;
+        const ty = Math.sin(angle) * distance;
+        
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+        particle.style.setProperty('--tx', `${tx}px`);
+        particle.style.setProperty('--ty', `${ty}px`);
+        
+        // Utiliser la couleur de l'émoji avec variations
+        const baseColor = emoteColor || '#ff6b6b';
+        const alpha = 0.6 + Math.random() * 0.4;
+        particle.style.background = `radial-gradient(circle, ${baseColor}${Math.floor(alpha * 255).toString(16)} 0%, transparent 70%)`;
+        particle.style.boxShadow = `0 0 10px ${baseColor}80`;
+        
+        document.body.appendChild(particle);
+        
+        setTimeout(() => {
+            particle.remove();
+        }, 1000);
+    }
+}
+
+// Animation CSS pour fadeInOut
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fadeInOut {
+        0% { opacity: 0; transform: translateY(10px); }
+        20% { opacity: 1; transform: translateY(0); }
+        80% { opacity: 1; transform: translateY(0); }
+        100% { opacity: 0; transform: translateY(-10px); }
+    }
+`;
+document.head.appendChild(style);
+
+// Initialiser la barre d'émotes au chargement
+function initGameControls() {
+    const modeSelect = document.getElementById('mode-select');
+    const diffSelect = document.getElementById('bot-difficulty');
+    const hintBtn = document.getElementById('hint-btn');
+    const restartBtn = document.getElementById('restart-btn');
+
+    if (modeSelect) {
+        modeSelect.addEventListener('change', () => {
+            playAgainstBot = modeSelect.value === 'bot';
+            botColor = 'black'; // бот грає чорними
+            resetGameState();
+        });
+    }
+
+    if (diffSelect) {
+        diffSelect.addEventListener('change', () => {
+            botDifficulty = diffSelect.value;
+        });
+    }
+
+    if (hintBtn) {
+        hintBtn.addEventListener('click', () => {
+            const move = suggestHintForPlayer(currentTurn);
+            if (move) {
+                hintMove = {
+                    fromCol: move.from[0],
+                    fromRow: move.from[1],
+                    toCol: move.to[0],
+                    toRow: move.to[1]
+                };
+                draw();
+            } else {
+                alert("Aucun coup disponible.");
+            }
+        });
+    }
+
+    if (restartBtn) {
+        restartBtn.addEventListener('click', () => {
+            resetGameState();
+            // Si mode bot sélectionné, on reste en mode bot
+            playAgainstBot = modeSelect && modeSelect.value === 'bot';
+        });
+    }
+}
+
+function initUI() {
+    initEmoteBar();
+    initGameControls();
+    resetGameState();
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initUI);
+} else {
+    initUI();
+}
+
+// Pour tester: simuler une émoji d'un autre joueur (décommentez pour tester)
+// setTimeout(() => receiveEmote('crown', 'Opponent'), 2000);

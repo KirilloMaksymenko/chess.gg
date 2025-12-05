@@ -10,11 +10,48 @@
 </head>
 <body>
     <div class="container">
-         <canvas id="canvas" width="1024" height="1024"></canvas>
+        <!-- Zone d'affichage des émotes à gauche du plateau -->
+        <div id="emote-display-area" class="emote-display-area"></div>
+        
+        <canvas id="canvas" width="1024" height="1024"></canvas>
+        
+        <!-- Barre d'émotes -->
+        <div id="emote-bar" class="emote-bar">
+            <button class="emote-btn" data-emote="checkmate" title="Checkmate!">♔</button>
+            <button class="emote-btn" data-emote="check" title="Check!">⚡</button>
+            <button class="emote-btn" data-emote="good-move" title="Good move!">✨</button>
+            <button class="emote-btn" data-emote="well-played" title="Well played!">👑</button>
+            <button class="emote-btn" data-emote="oops" title="Oops!">😅</button>
+            <button class="emote-btn" data-emote="nice-try" title="Nice try!">💪</button>
+            <button class="emote-btn" data-emote="brilliant" title="Brilliant!">🌟</button>
+            <button class="emote-btn" data-emote="respect" title="Respect!">🤝</button>
+        </div>
+        
         <div id="gameStatus" class="game-stat">
             <div>Turn: <span id="currentTurn">White</span></div>
             <div>Status: <span id="status">The game continues</span></div>
             <div class="">------------------------</div>
+            <div class="controls-panel">
+                <div class="controls-row">
+                    <label for="mode-select">Mode :</label>
+                    <select id="mode-select">
+                        <option value="pvp">Joueur vs Joueur</option>
+                        <option value="bot">Vs Bot</option>
+                    </select>
+                </div>
+                <div class="controls-row">
+                    <label for="bot-difficulty">Bot :</label>
+                    <select id="bot-difficulty">
+                        <option value="easy">Facile</option>
+                        <option value="medium">Moyen</option>
+                        <option value="hard">Difficile</option>
+                    </select>
+                </div>
+                <div class="controls-row buttons">
+                    <button id="restart-btn">Rejouer</button>
+                    <button id="hint-btn">Suggestion</button>
+                </div>
+            </div>
             <div id="move-count"></div>
         </div>
     </div>

@@ -395,6 +395,7 @@ function updateGameStatus() {
         if (inCheck) {
             gameStatus = 'checkmate';
             winner = currentTurn === 'white' ? 'black' : 'white';
+            console.log("Winner")
         } else {
             gameStatus = 'stalemate';
         }
@@ -403,6 +404,7 @@ function updateGameStatus() {
     } else {
         gameStatus = 'playing';
     }
+    console.log(winner)
 
     
 }
