@@ -761,7 +761,6 @@ function enemyColor(ch1, ch2) {
 
 function flipMap(data){
     console.log("FLIP START",map," - ",data)
-    // Створюємо глибоку копію, щоб не змінювати оригінальні дані
     let cloneMap = data.map(row => [...row])
     if(yourColor==='white'){
         console.log("MAP ====",map)
@@ -769,7 +768,6 @@ function flipMap(data){
     }else{
         console.log("Black flip")
         let newMap = []
-        // Перевертаємо кожен рядок для чорних гравців
         for (let i = 0; i < cloneMap.length; i++) {
             newMap[i] = [...cloneMap[i]].reverse()   
         }

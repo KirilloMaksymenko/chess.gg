@@ -33,6 +33,7 @@ const ImgObj = {};
 const bgImage = new Image();
 const pointImage = new Image();
 const pointAttImage = new Image();
+const cellImage = new Image();
 
 let imagesLoaded = false;
 
@@ -75,6 +76,12 @@ function preloadImages() {
         pointAttImage.onerror = resolve;
     }));
     
+    cellImage.src = "/Source/cell.png";
+    imagePromises.push(new Promise((resolve) => {
+        cellImage.onload = resolve;
+        cellImage.onerror = resolve;
+    }));
+
     Promise.all(imagePromises).then(() => {
         imagesLoaded = true;
         draw(); 
@@ -116,11 +123,12 @@ function draw(){
 
         for (let i = 0; i < 4; i++) {
             console.log(posSelect[0]+50+i*117, posSelect[1])
-            ctx.rect(dec*117+200+i*117, posSelect[1]*103, 117, 103);
-            ctx.fillStyle = "lightblue";
+            //ctx.rect(dec*117+200+i*117, posSelect[1]*103, 117, 103);
+            //ctx.fillStyle = "lightblue";
             //ctx.fill();
-            ctx.rect(dec*117+200+i*117, posSelect[1]*103, 117, 103);
-            ctx.stroke();
+            //ctx.rect(dec*117+200+i*117, posSelect[1]*103, 117, 103);
+            //ctx.stroke();
+            ctx.drawImage(cellImage, dec*117+200+i*117, posSelect[1]*103, 117, 103);
             ctx.drawImage(ImgObj[piece === piece.toLowerCase() ?  piecSelect[i] : piecSelect[i].toUpperCase()], dec*117+235+117*i, posSelect[1]*103, 50, 100);
             
         }
