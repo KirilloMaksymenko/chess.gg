@@ -157,7 +157,7 @@ io.sockets.on('connection', function (client) {
     client.on('create-room', function (data) {
         try {
             if (clientToRoom.has(client.id)) {
-                client.emit('error', { message: 'Ви вже знаходитесь в кімнаті' })
+                client.emit('error', { message: 'You are already in the room.' })
                 return
             }
 
@@ -205,7 +205,7 @@ io.sockets.on('connection', function (client) {
             }
         } catch (error) {
             console.error('Error creating room:', error)
-            client.emit('error', { message: 'Помилка створення кімнати' })
+            client.emit('error', { message: 'Room creation error' })
         }
     })
 
@@ -214,12 +214,12 @@ io.sockets.on('connection', function (client) {
             const { roomId } = data
 
             if (clientToRoom.has(client.id)) {
-                client.emit('error', { message: 'Ви вже знаходитесь в кімнаті' })
+                client.emit('error', { message: 'You are already in the room.' })
                 return
             }
 
             if (!rooms.has(roomId)) {
-                client.emit('error', { message: 'Кімната не знайдена' })
+                client.emit('error', { message: 'Room not found' })
                 return
             }
 
@@ -315,7 +315,7 @@ io.sockets.on('connection', function (client) {
             }
         } catch (error) {
             console.error('Error joining room:', error)
-            client.emit('error', { message: 'Помилка приєднання до кімнати' })
+            client.emit('error', { message: 'Error joining room' })
         }
     })
 
@@ -324,7 +324,7 @@ io.sockets.on('connection', function (client) {
             const { roomId } = data
 
             if (!rooms.has(roomId)) {
-                client.emit('error', { message: 'Кімната не знайдена' })
+                client.emit('error', { message: 'Room not found' })
                 return
             }
 
@@ -597,18 +597,6 @@ io.sockets.on('connection', function (client) {
             console.error('Error rejoining room:', error)
             client.emit('error', { message: 'Помилка повторного приєднання до кімнати' })
         }
-    })
-
-    client.on('get-role', function () {
-        const role = getClientRole(client.id)
-        const color = getClientColor(client.id)
-        const roomId = clientToRoom.get(client.id)
-        client.emit('role-info', {
-            role: role,
-            color: color,
-            roomId: roomId
-        })
-        console.log(`Client ${client.id} requested role: ${role}, color: ${color} in room ${roomId}`)
     })
 
     client.on('get-rooms', function () {
