@@ -23,12 +23,12 @@ const ImgLinks = {
     "k":"/Source/Paws/v1/king_w.png",
     "q":"/Source/Paws/v1/quin_w.png",
 
-    "P":"/Source/Paws/v1/pawn_b.png",
-    "R":"/Source/Paws/v1/rok_b.png",
-    "S":"/Source/Paws/v1/slon_b.png",
-    "N":"/Source/Paws/v1/horse_b.png",
-    "K":"/Source/Paws/v1/king_b.png",
-    "Q":"/Source/Paws/v1/quin_b.png",
+    "P":"/Source/Paws/v1/pawn_b_2.png",
+    "R":"/Source/Paws/v1/rok_b_2.png",
+    "S":"/Source/Paws/v1/slon_b_2.png",
+    "N":"/Source/Paws/v1/horse_b_2.png",
+    "K":"/Source/Paws/v1/king_b_2.png",
+    "Q":"/Source/Paws/v1/quin_b_2.png",
 }
 
 const ImgObj = {};
