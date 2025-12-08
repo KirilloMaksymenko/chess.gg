@@ -175,7 +175,8 @@ io.sockets.on('connection', function (client) {
                     gameStatus: 'playing',
                     winner: null,
                     log: []
-                }
+                },
+                
             })
             clientToRoom.set(client.id, roomId)
             setClientRole(client.id, 'player')
@@ -609,6 +610,7 @@ io.sockets.on('connection', function (client) {
         const roomId = clientToRoom.get(client.id)
 
         const room = rooms.get(roomId)
+
         console.log(room)
         room.gameInfo.map = data["map"]
         console.log(data["map"])
@@ -617,13 +619,29 @@ io.sockets.on('connection', function (client) {
         room.gameInfo.gameStatus = data["gameStatus"]
         room.gameInfo.winner = data["winner"]
         room.gameInfo.log[room.gameInfo.countTurn] = data.log
-
+        
         console.log(room)
         
         io.to(roomId).emit('update-game-state',room.gameInfo)
     })
 
+    client.on("checkmate-gameover", function(winner){
 
+        console.log("CHECKMATE: ",winner)
+        const roomId = clientToRoom.get(client.id)
+        const room = rooms.get(roomId)
+        
+        const data = {
+            winner:winner,
+            timerW:321,
+            timerB:75,
+            countTurns: room.gameInfo.countTurn,
+            gameInfo:room.gameInfo
+
+        }
+
+        io.to(roomId).emit('gameover-gg',data)
+    })
 
 
 

@@ -92,13 +92,11 @@ function preloadImages() {
     
     Promise.all(imagePromises).then(() => {
         imagesLoaded = true;
-        console.log("Pre")
         draw(); 
     });
 }
 
 function draw(){
-    console.log("SYKA",map)
     if (!imagesLoaded) {
         return;
     }
@@ -124,7 +122,6 @@ function draw(){
     }
 
     if(gameStatus == "selectNewPawn" && yourColor === currentTurn){
-        console.log(posSelect)
         const piecSelect = ["r","n","s","q"]
         const piece = map[posSelect[0]][posSelect[1]]
         let dec = 0
@@ -132,12 +129,6 @@ function draw(){
         else dec = posSelect[0]-1
 
         for (let i = 0; i < 4; i++) {
-            console.log(posSelect[0]+50+i*117, posSelect[1])
-            //ctx.rect(dec*117+200+i*117, posSelect[1]*103, 117, 103);
-            //ctx.fillStyle = "lightblue";
-            //ctx.fill();
-            //ctx.rect(dec*117+200+i*117, posSelect[1]*103, 117, 103);
-            //ctx.stroke();
             ctx.drawImage(cellImage, dec*117+200+i*117, posSelect[1]*103, 117, 103);
             ctx.drawImage(ImgObj[piece === piece.toLowerCase() ?  piecSelect[i] : piecSelect[i].toUpperCase()], dec*117+235+117*i, posSelect[1]*103+10, 40, 80);
             
@@ -199,7 +190,6 @@ function getCellSelect(x, y){
     const boardEndX = boardStartX + cellWidth * 4;
     const boardEndY = posSelect[1]*103+103
 
-    console.log(scaleX,scaleY," - ",boardStartX,boardStartY," / ",boardEndX,boardEndY)
     if (scaledX < boardStartX || scaledX > boardEndX || scaledY < boardStartY || scaledY > boardEndY) {
         return -1;
     }
@@ -395,7 +385,8 @@ function updateGameStatus() {
         if (inCheck) {
             gameStatus = 'checkmate';
             winner = currentTurn === 'white' ? 'black' : 'white';
-            console.log("Winner")
+            console.log("Winner",winner)
+            socket.emit("checkmate-gameover",winner)
             
         } else {
             gameStatus = 'stalemate';
@@ -405,7 +396,6 @@ function updateGameStatus() {
     } else {
         gameStatus = 'playing';
     }
-    console.log(winner)
 
     
 }
@@ -484,8 +474,6 @@ function movePiece(fromCol, fromRow, toCol, toRow) {
 
     
     updateData()
-    
-console.log("movepice")
     draw();
 }
 
@@ -493,7 +481,6 @@ function updateData(){
     let newMap = []
 
     let clonMap = map.map(row => [...row])
-    console.log("UPDTE send", map)
     if(yourColor==='white'){
         newMap = clonMap
     }else{
@@ -527,8 +514,6 @@ function displayGameStatus() {
     if (statusElement) {
         if (gameStatus === 'checkmate') {
             statusElement.textContent = `Checkmate! Won: ${winner === 'white' ? 'White' : 'Black'}`;
-            alert(`Checkmate! Won: ${winner === 'white' ? 'White' : 'Black'}`);
-            updateData()
         } else if (gameStatus === 'stalemate') {
             statusElement.textContent = 'No way! Draw';
             alert('No way! Draw');
@@ -556,7 +541,6 @@ function movePoint(e){
     if(gameStatus == 'selectNewPawn'){
 
         let t = getCellSelect(x,y)
-        console.log(x,y,t)
         if (t === -1) {
             return;
         }
@@ -564,7 +548,6 @@ function movePoint(e){
         const piece = map[posSelect[0]][posSelect[1]]
 
         selectNewPawn([posSelect[0],posSelect[1]],piece === piece.toLowerCase() ?  piecSelect[t[0]-1] : piecSelect[t[0]-1].toUpperCase())
-        console.log("selecnewpaw")
         draw()
         return
     }
@@ -589,7 +572,6 @@ function movePoint(e){
         if (col === selectedCol && row === selectedRow) {
             selectedPiece = null;
             validMoves = [];
-            console.log("1")
             draw();
             return;
         }
@@ -600,13 +582,11 @@ function movePoint(e){
             if (pieceColor !== currentTurn) {
                 selectedPiece = null;
                 validMoves = [];
-                console.log("2")
                 draw();
                 return;
             }
             selectedPiece = [col, row];
             validMoves = getValidMovesWithCheck(clickedPiece, u);
-            console.log("3")
             draw();
             showMoves(clickedPiece, u);
             return;
@@ -614,28 +594,24 @@ function movePoint(e){
 
         selectedPiece = null;
         validMoves = [];
-        console.log("4")
         draw();
         return;
     }
 
     const piece = map[col][row];
     if (!piece) {
-        console.log("5")
         draw();
         return;
     }
     
     const pieceColor = piece === piece.toLowerCase() ? 'white' : 'black';
     if (pieceColor !== currentTurn) {
-        console.log("6")
         draw();
         return;
     }
 
     selectedPiece = [col, row];
     validMoves = getValidMovesWithCheck(piece, u);
-    console.log("6")
     draw();
     showMoves(piece, u);
 }
@@ -764,21 +740,16 @@ function enemyColor(ch1, ch2) {
 
 
 function flipMap(data){
-    console.log("FLIP START",map," - ",data)
     let cloneMap = data.map(row => [...row])
     if(yourColor==='white'){
-        console.log("MAP ====",map)
         map = cloneMap
     }else{
-        console.log("Black flip")
         let newMap = []
         for (let i = 0; i < cloneMap.length; i++) {
             newMap[i] = [...cloneMap[i]].reverse()   
         }
-        console.log("MAP ====",map)
         map = newMap
     }
-    console.log("FLIP END",map)
 }
 
 
@@ -848,7 +819,6 @@ socket.on('room-rejoined', function(data) {
         gameStatus = data.gameInfo.gameStatus
         winner = data.gameInfo.winner
 
-        console.log("MAP: ",data.gameInfo.map)
         flipMap(data.gameInfo.map)
         
         
@@ -915,8 +885,6 @@ socket.on('update-game-state', function(data){
     gameStatus = data.gameStatus
     winner = data.winner
 
-    console.log("MAP: ",data.map)
-
     flipMap(data.map)
 
     logGame(data.log[data.countTurn])
@@ -927,6 +895,16 @@ socket.on('update-game-state', function(data){
 
 })
 
+
+socket.on("gameover-gg",function(data){
+    updateGameStatus();
+    const timeBtext = Math.round(data.timerB/60) + ":" + data.timerB%60
+    const timeWtext = Math.round(data.timerW/60) + ":" + data.timerW%60
+
+    alert(`Checkmate! Won: ${data.winner}\n time black: ${timeBtext}\n time white: ${timeWtext}\n count turns: ${data.gameInfo.countTurn}`);
+
+
+})          
 
 
 
