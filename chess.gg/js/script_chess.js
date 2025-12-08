@@ -396,6 +396,7 @@ function updateGameStatus() {
             gameStatus = 'checkmate';
             winner = currentTurn === 'white' ? 'black' : 'white';
             console.log("Winner")
+            
         } else {
             gameStatus = 'stalemate';
         }
@@ -490,18 +491,18 @@ console.log("movepice")
 
 function updateData(){
     let newMap = []
-    // Створюємо глибоку копію масиву, щоб не змінювати оригінальний map
+
     let clonMap = map.map(row => [...row])
     console.log("UPDTE send", map)
     if(yourColor==='white'){
         newMap = clonMap
     }else{
-        // Перевертаємо кожен рядок для чорних гравців
+
         for (let i = 0; i < clonMap.length; i++) {
             newMap[i] = [...clonMap[i]].reverse()   
         }
     }
-    console.log("FINAML ", newMap)
+    
     updateGameStatus();
     let data = {
         map: newMap,
@@ -527,6 +528,7 @@ function displayGameStatus() {
         if (gameStatus === 'checkmate') {
             statusElement.textContent = `Checkmate! Won: ${winner === 'white' ? 'White' : 'Black'}`;
             alert(`Checkmate! Won: ${winner === 'white' ? 'White' : 'Black'}`);
+            updateData()
         } else if (gameStatus === 'stalemate') {
             statusElement.textContent = 'No way! Draw';
             alert('No way! Draw');
@@ -918,6 +920,7 @@ socket.on('update-game-state', function(data){
     flipMap(data.map)
 
     logGame(data.log[data.countTurn])
+    updateGameStatus();
     displayGameStatus();
     console.log("updatestate",map)
     draw()
