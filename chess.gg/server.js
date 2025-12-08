@@ -112,6 +112,10 @@ function setClientRole(clientId, role) {
     console.log(`Client ${clientId} role set to: ${role}`)
 }
 
+function StartTimer(roomId){
+
+}
+
 function setClientColor(clientId, color) {
     clientColor.set(clientId, color)
     console.log(`Client ${clientId} color set to: ${color}`)
@@ -137,6 +141,21 @@ function cleanupRoom(roomId) {
         console.log(`Room ${roomId} deleted (empty for more than ${EMPTY_ROOM_TIMEOUT_MS / 60000} minutes)`)
     }
 }
+
+function timerStart(){
+    
+}
+
+
+
+function timerTimeout(game){
+    if(gameInfo.currentTurn
+
+    intervalWhite = setInterval(() => {
+        
+    }, 1000);
+}
+
 
 
 
@@ -174,7 +193,10 @@ io.sockets.on('connection', function (client) {
                     currentTurn: 'white',
                     gameStatus: 'playing',
                     winner: null,
-                    log: []
+                    log: [],
+                    timerBlack: 600,
+                    timerWhite: 600,
+                    disableTimer: false
                 }
             })
             clientToRoom.set(client.id, roomId)
@@ -617,25 +639,11 @@ io.sockets.on('connection', function (client) {
         room.gameInfo.gameStatus = data["gameStatus"]
         room.gameInfo.winner = data["winner"]
         room.gameInfo.log[room.gameInfo.countTurn] = data.log
-
+        timerTimeout(room.gameInfo);
         console.log(room)
         
         io.to(roomId).emit('update-game-state',room.gameInfo)
     })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     client.on('disconnect', function () {
         console.log(`Client ${client.id} disconnected`)
