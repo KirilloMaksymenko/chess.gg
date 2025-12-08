@@ -49,6 +49,10 @@ let countTurn = 0;
 let currentTurn = 'white'; // 'white'  'black'
 let gameStatus = 'playing'; // 'playing', 'check', 'checkmate', 'stalemate' ,'selectNewPawn'
 let winner = null; // 'white', 'black', null
+let timerWhite = 600;
+let timerBlack = 600;
+let intervalBlack = null;
+let intervalWhite = null;
 
 function preloadImages() {
     const imagePromises = [];
@@ -752,6 +756,11 @@ function flipMap(data){
     }
 }
 
+function timerResume(color){
+    document.getElementById('timer-'+color).style
+
+}
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////        SERVER FUNCTIONS
@@ -804,6 +813,7 @@ socket.on('room-rejoined', function(data) {
             }
         }
         
+        timer
         document.getElementById('room-id').textContent = roomId
         document.getElementById('player-color').textContent = playerColor ? (playerColor === 'white' ? 'White' : 'Black') : '-'
         document.getElementById('spectators-count').textContent = data.spectatorsCount || 0
@@ -885,6 +895,12 @@ socket.on('update-game-state', function(data){
     gameStatus = data.gameStatus
     winner = data.winner
 
+<<<<<<< HEAD
+=======
+    console.log("MAP: ",data.map)
+
+    timerResume(data.currentTurn)
+>>>>>>> a56adebfefdc6d71080ac443bdeb00ea990b9766
     flipMap(data.map)
 
     logGame(data.log[data.countTurn])

@@ -112,6 +112,10 @@ function setClientRole(clientId, role) {
     console.log(`Client ${clientId} role set to: ${role}`)
 }
 
+function StartTimer(roomId){
+
+}
+
 function setClientColor(clientId, color) {
     clientColor.set(clientId, color)
     console.log(`Client ${clientId} color set to: ${color}`)
@@ -137,6 +141,21 @@ function cleanupRoom(roomId) {
         console.log(`Room ${roomId} deleted (empty for more than ${EMPTY_ROOM_TIMEOUT_MS / 60000} minutes)`)
     }
 }
+
+function timerStart(){
+    
+}
+
+
+
+function timerTimeout(game){
+    if(gameInfo.currentTurn
+
+    intervalWhite = setInterval(() => {
+        
+    }, 1000);
+}
+
 
 
 
@@ -174,9 +193,17 @@ io.sockets.on('connection', function (client) {
                     currentTurn: 'white',
                     gameStatus: 'playing',
                     winner: null,
+<<<<<<< HEAD
                     log: []
                 },
                 
+=======
+                    log: [],
+                    timerBlack: 600,
+                    timerWhite: 600,
+                    disableTimer: false
+                }
+>>>>>>> a56adebfefdc6d71080ac443bdeb00ea990b9766
             })
             clientToRoom.set(client.id, roomId)
             setClientRole(client.id, 'player')
@@ -619,12 +646,17 @@ io.sockets.on('connection', function (client) {
         room.gameInfo.gameStatus = data["gameStatus"]
         room.gameInfo.winner = data["winner"]
         room.gameInfo.log[room.gameInfo.countTurn] = data.log
+<<<<<<< HEAD
         
+=======
+        timerTimeout(room.gameInfo);
+>>>>>>> a56adebfefdc6d71080ac443bdeb00ea990b9766
         console.log(room)
         
         io.to(roomId).emit('update-game-state',room.gameInfo)
     })
 
+<<<<<<< HEAD
     client.on("checkmate-gameover", function(winner){
 
         console.log("CHECKMATE: ",winner)
@@ -655,6 +687,8 @@ io.sockets.on('connection', function (client) {
 
 
 
+=======
+>>>>>>> a56adebfefdc6d71080ac443bdeb00ea990b9766
     client.on('disconnect', function () {
         console.log(`Client ${client.id} disconnected`)
 
