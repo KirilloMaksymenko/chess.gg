@@ -93,6 +93,7 @@ function getAvailableRooms() {
         // if (playersCount < 2) {
             availableRooms.push({
                 roomId: roomId,
+                gamemode:room.gameInfo.gamemode,
                 playersCount: playersCount,
                 maxPlayers: 2,
                 spectatorsCount: room.spectators ? room.spectators.length : 0
@@ -192,6 +193,7 @@ io.sockets.on('connection', function (client) {
                     countTurn: 0,
                     currentTurn: 'white',
                     gameStatus: 'playing',
+                    gamemode: data.gamemode,
                     winner: null,  
                     log: [],
                     timerBlack: 600,

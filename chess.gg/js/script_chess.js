@@ -44,6 +44,7 @@ let validMoves = [];
 let lastTurn = null
 let posSelect = null
 
+let gamemode = null
 let yourColor = null
 let countTurn = 0;
 let currentTurn = 'white'; // 'white'  'black'
@@ -119,6 +120,9 @@ function draw(){
     for (let row = 0; row < 8; row++) {
         for (let colom = 0; colom < 8; colom++) {
             let piece = map[colom][row];
+            if(gamemode==="mode-Black"){
+                piece = piece.toUpperCase()
+            }
             
             if(piece && ImgObj[piece]){
                 ctx.drawImage(ImgObj[piece], 60+117*colom, 103*row+20, 50, 100);
@@ -129,6 +133,9 @@ function draw(){
     if(gameStatus == "selectNewPawn" && yourColor === currentTurn){
         const piecSelect = ["r","n","s","q"]
         const piece = map[posSelect[0]][posSelect[1]]
+        if(gamemode==="mode-Black"){
+            piece = piece.toUpperCase()
+        }
         let dec = 0
         if(posSelect[0]>4) dec = 3
         else dec = posSelect[0]-1
@@ -390,7 +397,6 @@ function updateGameStatus() {
         if (inCheck) {
             gameStatus = 'checkmate';
             winner = currentTurn === 'white' ? 'black' : 'white';
-            console.log("Winner",winner)
             socket.emit("checkmate-gameover",winner)
             
         } else {
@@ -828,6 +834,7 @@ socket.on('room-rejoined', function(data) {
         currentTurn = data.gameInfo.currentTurn
         gameStatus = data.gameInfo.gameStatus
         winner = data.gameInfo.winner
+        gamemode = data.gameInfo.gamemode
 
         flipMap(data.gameInfo.map)
         
@@ -838,7 +845,6 @@ socket.on('room-rejoined', function(data) {
             updateGameStatus();
             displayGameStatus();
         }, 100);
-        console.log("roomrej")
         draw()
     }
 })
@@ -894,6 +900,7 @@ socket.on('update-game-state', function(data){
     currentTurn = data.currentTurn
     gameStatus = data.gameStatus
     winner = data.winner
+    gamemode = data.gamemode
 
     //timerResume(data.currentTurn)
     flipMap(data.map)
@@ -908,7 +915,10 @@ socket.on('update-game-state', function(data){
 
 socket.on("gameover-gg",function(data){
     if(!loseShow){
+        gameStatus = data.gameStatus
+        winner = data.winner
         updateGameStatus();
+        displayGameStatus();
         const timeBtext = Math.round(data.timerB/60) + ":" + data.timerB%60
         const timeWtext = Math.round(data.timerW/60) + ":" + data.timerW%60
     

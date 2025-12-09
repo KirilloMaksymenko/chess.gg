@@ -1,5 +1,10 @@
+
+
+
 let clientId = ""
 let currentRoomId = null
+
+let gamemode = "classic"
 
 const socket = io()
 
@@ -125,22 +130,24 @@ function updateRoomsList(rooms) {
     }
 
     rooms.forEach(room => {
-        const roomElement = document.createElement('div')
-        roomElement.className = 'room-item'
-        roomElement.innerHTML = `
-            <div class="room-list-item">
-                <div class="text-block">
-                    <img class="panel-room-img" src="/Source/panel.png" alt="">
-                    <div class="text-item">
-                        <span class="room-id">#${room.roomId}</span>
-                        <span class="room-players">${room.playersCount}/${room.maxPlayers}</span>
+        if(room.gamemode === gamemode){
+            const roomElement = document.createElement('div')
+            roomElement.className = 'room-item'
+            roomElement.innerHTML = `
+                <div class="room-list-item">
+                    <div class="text-block">
+                        <img class="panel-room-img" src="/Source/panel.png" alt="">
+                        <div class="text-item">
+                            <span class="room-id">#${room.roomId}</span>
+                            <span class="room-players">${room.playersCount}/${room.maxPlayers}</span>
+                        </div>
                     </div>
+                    
+                    <button class="join-btn" data-room-id="${room.roomId}"><img class="bt-join-img" src="/Source/bt_join.png" alt=""></button>
                 </div>
-                
-                <button class="join-btn" data-room-id="${room.roomId}"><img class="bt-join-img" src="/Source/bt_join.png" alt=""></button>
-            </div>
-        `
-        roomsList.appendChild(roomElement)
+            `
+            roomsList.appendChild(roomElement)
+        }
     })
 
     document.querySelectorAll('.join-btn').forEach(btn => {
@@ -167,7 +174,10 @@ function createRoom() {
         alert('You are already in the room.')
         return
     }
-    socket.emit('create-room', {})
+    const data = {
+        gamemode: gamemode
+    }
+    socket.emit('create-room', data)
 }
 
 function init() {
@@ -186,3 +196,7 @@ if (document.readyState === 'loading') {
 } else {
     init()
 }
+
+document.getElementById('select-mode-id').addEventListener("change", function(e){
+    gamemode = e.target.value
+})
