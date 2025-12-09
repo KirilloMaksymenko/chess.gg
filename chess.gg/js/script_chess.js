@@ -49,10 +49,11 @@ let countTurn = 0;
 let currentTurn = 'white'; // 'white'  'black'
 let gameStatus = 'playing'; // 'playing', 'check', 'checkmate', 'stalemate' ,'selectNewPawn'
 let winner = null; // 'white', 'black', null
-let timerWhite = 600;
-let timerBlack = 600;
-let intervalBlack = null;
-let intervalWhite = null;
+let loseShow = false;
+// let timerWhite = 600;
+// let timerBlack = 600;
+// let intervalBlack = null;
+// let intervalWhite = null;
 
 function preloadImages() {
     const imagePromises = [];
@@ -756,10 +757,10 @@ function flipMap(data){
     }
 }
 
-function timerResume(color){
-    document.getElementById('timer-'+color).style
+// function timerResume(color){
+//     document.getElementById('timer-'+color).style
 
-}
+// }
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -813,7 +814,6 @@ socket.on('room-rejoined', function(data) {
             }
         }
         
-        timer
         document.getElementById('room-id').textContent = roomId
         document.getElementById('player-color').textContent = playerColor ? (playerColor === 'white' ? 'White' : 'Black') : '-'
         document.getElementById('spectators-count').textContent = data.spectatorsCount || 0
@@ -895,29 +895,28 @@ socket.on('update-game-state', function(data){
     gameStatus = data.gameStatus
     winner = data.winner
 
-<<<<<<< HEAD
-=======
-    console.log("MAP: ",data.map)
-
-    timerResume(data.currentTurn)
->>>>>>> a56adebfefdc6d71080ac443bdeb00ea990b9766
+    //timerResume(data.currentTurn)
     flipMap(data.map)
 
     logGame(data.log[data.countTurn])
     updateGameStatus();
     displayGameStatus();
-    console.log("updatestate",map)
     draw()
 
 })
 
 
 socket.on("gameover-gg",function(data){
-    updateGameStatus();
-    const timeBtext = Math.round(data.timerB/60) + ":" + data.timerB%60
-    const timeWtext = Math.round(data.timerW/60) + ":" + data.timerW%60
+    if(!loseShow){
+        updateGameStatus();
+        const timeBtext = Math.round(data.timerB/60) + ":" + data.timerB%60
+        const timeWtext = Math.round(data.timerW/60) + ":" + data.timerW%60
+    
+        alert(`Checkmate! Won: ${data.winner}\n time black: ${timeBtext}\n time white: ${timeWtext}\n count turns: ${data.gameInfo.countTurn}`);
 
-    alert(`Checkmate! Won: ${data.winner}\n time black: ${timeBtext}\n time white: ${timeWtext}\n count turns: ${data.gameInfo.countTurn}`);
+        loseShow = true
+    }
+    
 
 
 })          

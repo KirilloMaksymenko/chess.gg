@@ -138,7 +138,7 @@ function cleanupRoom(roomId) {
 
     if (playersCount === 0 && spectatorsCount === 0 && roomAgeMs > EMPTY_ROOM_TIMEOUT_MS) {
         rooms.delete(roomId)
-        console.log(`Room ${roomId} deleted (empty for more than ${EMPTY_ROOM_TIMEOUT_MS / 60000} minutes)`)
+        console.log(`Room ${roomId} deleted (empty for more than ${EMPTY_ROOM_TIMEOUT_MS / 1000} sec)`)
     }
 }
 
@@ -149,11 +149,11 @@ function timerStart(){
 
 
 function timerTimeout(game){
-    if(gameInfo.currentTurn
+    // if(gameInfo.currentTurn
 
-    intervalWhite = setInterval(() => {
+    // intervalWhite = setInterval(() => {
         
-    }, 1000);
+    // }, 1000);
 }
 
 
@@ -192,18 +192,12 @@ io.sockets.on('connection', function (client) {
                     countTurn: 0,
                     currentTurn: 'white',
                     gameStatus: 'playing',
-                    winner: null,
-<<<<<<< HEAD
-                    log: []
-                },
-                
-=======
+                    winner: null,  
                     log: [],
                     timerBlack: 600,
                     timerWhite: 600,
                     disableTimer: false
                 }
->>>>>>> a56adebfefdc6d71080ac443bdeb00ea990b9766
             })
             clientToRoom.set(client.id, roomId)
             setClientRole(client.id, 'player')
@@ -646,17 +640,12 @@ io.sockets.on('connection', function (client) {
         room.gameInfo.gameStatus = data["gameStatus"]
         room.gameInfo.winner = data["winner"]
         room.gameInfo.log[room.gameInfo.countTurn] = data.log
-<<<<<<< HEAD
-        
-=======
         timerTimeout(room.gameInfo);
->>>>>>> a56adebfefdc6d71080ac443bdeb00ea990b9766
         console.log(room)
         
         io.to(roomId).emit('update-game-state',room.gameInfo)
     })
 
-<<<<<<< HEAD
     client.on("checkmate-gameover", function(winner){
 
         console.log("CHECKMATE: ",winner)
@@ -675,20 +664,6 @@ io.sockets.on('connection', function (client) {
         io.to(roomId).emit('gameover-gg',data)
     })
 
-
-
-
-
-
-
-
-
-
-
-
-
-=======
->>>>>>> a56adebfefdc6d71080ac443bdeb00ea990b9766
     client.on('disconnect', function () {
         console.log(`Client ${client.id} disconnected`)
 
@@ -721,5 +696,4 @@ io.sockets.on('connection', function (client) {
 })
 
 server.listen(PORT)
-console.log(`Сервер запущено на порту ${PORT}`)
-console.log(`Відкрийте http://localhost:${PORT} в браузері`)
+console.log(`Server ${PORT}`)
