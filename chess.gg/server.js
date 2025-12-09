@@ -4,6 +4,7 @@ const path = require('path')
 const { randomInt } = require('crypto')
 
 const PORT = 12345
+const kcof = 50
 
 const newMap =[
     ["R","P","","","","","p","r"],
@@ -142,6 +143,19 @@ function cleanupRoom(roomId) {
         console.log(`Room ${roomId} deleted (empty for more than ${EMPTY_ROOM_TIMEOUT_MS / 1000} sec)`)
     }
 }
+
+// function eloCalc(elo1,elo2,winner){
+
+//     const P1 = elo1 / (elo1+elo2)
+//     const P2 = elo2 / (elo1+elo2)
+
+//     elo1 = elo1 + kcof*(winner === 'white' ? 1 : 0 - P1) 
+//     elo2 = elo2 + kcof*(winner === 'white' ? 0 : 1 - P2)
+
+//     return {player1: elo1, player2: elo2}
+// }
+
+
 
 function timerStart(){
     

@@ -342,7 +342,7 @@ function wouldMovePutKingInCheck(fromCol, fromRow, toCol, toRow, color) {
     map[toCol][toRow] = originalPiece;
     map[fromCol][fromRow] = "";
     
-    const inCheck = isKingInCheck(color);
+    const inCheck = false
     
     map[fromCol][fromRow] = originalPiece;
     map[toCol][toRow] = targetPiece;
@@ -386,13 +386,10 @@ function updateGameStatus() {
     }
     if (!hasMoves) {
         if (inCheck) {
-            gameStatus = 'checkmate';
             winner = currentTurn === 'white' ? 'black' : 'white';
         } else {
-            gameStatus = 'stalemate';
         }
     } else if (inCheck) {
-        gameStatus = 'check';
     } else {
         gameStatus = 'playing';
     }
