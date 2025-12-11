@@ -717,8 +717,8 @@ io.sockets.on('connection', function (client) {
         room.gameInfo.gameStatus = "turnBased"
         room.gameInfo.turnBasedInfo.pieceW = data.pieceW
         room.gameInfo.turnBasedInfo.pieceB = data.pieceB
-        room.gameInfo.turnBasedInfo.hpW = hpCount[data.pieceW]
-        room.gameInfo.turnBasedInfo.hpB = hpCount[data.pieceB]
+        room.gameInfo.turnBasedInfo.hpW = hpCount[data.pieceW.toLowerCase()]
+        room.gameInfo.turnBasedInfo.hpB = hpCount[data.pieceB.toLowerCase()]
         room.gameInfo.turnBasedInfo.currentTurn = data.currentTurn
 
         io.to(roomId).emit('turn-based-update',room.gameInfo)

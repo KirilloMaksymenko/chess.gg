@@ -992,8 +992,10 @@ socket.on('room-rejoined', function(data) {
             pieceUse = yourColor === 'white' ? data.gameInfo.turnBasedInfo.pieceW : data.gameInfo.turnBasedInfo.pieceB
             pieceOpponent = yourColor === 'black' ? data.gameInfo.turnBasedInfo.pieceW : data.gameInfo.turnBasedInfo.pieceB
             
-            hpUse = yourColor === yourColor.toLowerCase() ? data.gameInfo.turnBasedInfo.pieceW : data.gameInfo.turnBasedInfo.pieceB
-            hpOpponent = yourColor === yourColor.toUpperCase() ? data.gameInfo.turnBasedInfo.pieceW : data.gameInfo.turnBasedInfo.pieceB
+            console.log(data.gameInfo.turnBasedInfo.hpW,data.gameInfo.turnBasedInfo.hpB)
+            
+            hpUse =  yourColor === 'white' ? data.gameInfo.turnBasedInfo.hpW : data.gameInfo.turnBasedInfo.hpB
+            hpOpponent =  yourColor === 'black' ? data.gameInfo.turnBasedInfo.hpW : data.gameInfo.turnBasedInfo.hpB
     
             currentBasedTurn = data.gameInfo.turnBasedInfo.currentTurn
         }
@@ -1084,11 +1086,11 @@ socket.on("turn-based-update",function(data){
 
     gameStatus = data.gameStatus
 
-    pieceUse = yourColor === yourColor.toLowerCase() ? data.turnBasedInfo.pieceW : data.turnBasedInfo.pieceB
-    pieceOpponent = yourColor === yourColor.toUpperCase() ? data.turnBasedInfo.pieceW : data.turnBasedInfo.pieceB
+    pieceUse = yourColor === yourColor === 'white' ? data.turnBasedInfo.pieceW : data.turnBasedInfo.pieceB
+    pieceOpponent = yourColor === yourColor === 'black' ? data.turnBasedInfo.pieceW : data.turnBasedInfo.pieceB
     
-    hpUse = yourColor === yourColor.toLowerCase() ? data.turnBasedInfo.pieceW : data.turnBasedInfo.pieceB
-    hpOpponent = yourColor === yourColor.toUpperCase() ? data.turnBasedInfo.pieceW : data.turnBasedInfo.pieceB
+    hpUse = yourColor === 'white' ? data.turnBasedInfo.hpW : data.turnBasedInfo.hpB
+    hpOpponent = yourColor === 'black' ? data.turnBasedInfo.hpW : data.turnBasedInfo.hpB
 
     currentBasedTurn = data.turnBasedInfo.currentTurn
 
