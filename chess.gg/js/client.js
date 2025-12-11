@@ -4,7 +4,7 @@
 let clientId = ""
 let currentRoomId = null
 
-let gamemode = "classic"
+let gamemode = "mode-Classic"
 
 const socket = io()
 

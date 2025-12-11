@@ -36,8 +36,19 @@ const server = http.createServer((req, res) => {
                 res.end(data)
             }
         })
-    } else if (req.url.startsWith('/game')) {
+    } else if (req.url.startsWith('/game/mode-Classic') || req.url.startsWith('/game/mode-Black')) {
         const filePath = path.join(__dirname, 'html', 'index_chess.html')
+        fs.readFile(filePath, (err, data) => {
+            if (err) {
+                res.writeHead(404)
+                res.end('Not found')
+            } else {
+                res.writeHead(200, { 'Content-Type': 'text/html' })
+                res.end(data)
+            }
+        })
+    } else if (req.url.startsWith('/game/mode-turne-based')) {
+        const filePath = path.join(__dirname, 'html', 'index_turn_based.html')
         fs.readFile(filePath, (err, data) => {
             if (err) {
                 res.writeHead(404)
@@ -231,7 +242,7 @@ io.sockets.on('connection', function (client) {
             const room = rooms.get(roomId)
             console.log(`Room ${roomId} has ${room.players.length} players`)
             if (room.players.length === 2) {
-                const redirectUrl = `/game?roomId=${roomId}`
+                const redirectUrl = `/game/${room.gameInfo.gamemode}?roomId=${roomId}`
                 console.log(`Redirecting room ${roomId} to ${redirectUrl}`)
                 io.to(roomId).emit('redirect', redirectUrl)
             } else {
@@ -325,7 +336,7 @@ io.sockets.on('connection', function (client) {
             io.emit('rooms-list', updatedRooms)
 
             if (room.players.length === 2) {
-                const redirectUrl = `/game?roomId=${roomId}`
+                const redirectUrl = `/game/${room.gameInfo.gamemode}?roomId=${roomId}`
                 console.log(`Redirecting room ${roomId} to ${redirectUrl}`)
                 console.log(`Room players array:`, room.players)
                 console.log(`Room playerColors:`, room.playerColors)

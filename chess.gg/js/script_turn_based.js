@@ -3,6 +3,7 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const ctx = document.getElementById("canvas").getContext("2d")
+const ctxTurn = document.getElementById("canvas-turn").getContext("2d")
 
 let map = [
     ["R","P","","","","","p","r"],
@@ -31,11 +32,29 @@ const ImgLinks = {
     "Q":"/Source/Paws/v1/quin_b_2.png",
 }
 
+const hpCount = {
+    "p":75,
+    "r":130,
+    "s":60,
+    "n":100,
+    "k":200,
+    "q":125,
+}
+
 const ImgObj = {};
 const bgImage = new Image();
 const pointImage = new Image();
 const pointAttImage = new Image();
 const cellImage = new Image();
+
+const barHp = new Image();
+const bar = new Image();
+const battleGround = new Image();
+const bgTurnBased = new Image();
+const cellSpell = new Image();
+const cloudColone = new Image();
+const colone = new Image();
+
 
 let imagesLoaded = false;
 
@@ -44,13 +63,20 @@ let validMoves = [];
 let lastTurn = null
 let posSelect = null
 
+
 let gamemode = null
 let yourColor = null
 let countTurn = 0;
 let currentTurn = 'white'; // 'white'  'black'
-let gameStatus = 'playing'; // 'playing', 'check', 'checkmate', 'stalemate' ,'selectNewPawn'
+let gameStatus = 'playing'; // 'playing', 'check', 'checkmate', 'stalemate' ,'selectNewPawn' , 'turnBased'
 let winner = null; // 'white', 'black', null
 let loseShow = false;
+
+let pieceUse = "K"
+let pieceOpponent = "q" 
+let hpUse = 200
+let hpOpponent = 125
+
 // let timerWhite = 600;
 // let timerBlack = 600;
 // let intervalBlack = null;
@@ -96,6 +122,50 @@ function preloadImages() {
         cellImage.onerror = resolve;
     }));
     
+
+    barHp.src = "/Source/TurnBased/bar_hp.png";
+    imagePromises.push(new Promise((resolve) => {
+        barHp.onload = resolve;
+        barHp.onerror = resolve;
+    }));
+    
+    bar.src = "/Source/TurnBased/bar.png";
+    imagePromises.push(new Promise((resolve) => {
+        bar.onload = resolve;
+        bar.onerror = resolve;
+    }));
+    
+    battleGround.src = "/Source/TurnBased/batt_ground.png";
+    imagePromises.push(new Promise((resolve) => {
+        battleGround.onload = resolve;
+        battleGround.onerror = resolve;
+    }));
+     
+    bgTurnBased.src = "/Source/TurnBased/bg_turn_based.png";
+    imagePromises.push(new Promise((resolve) => {
+        bgTurnBased.onload = resolve;
+        bgTurnBased.onerror = resolve;
+    }));
+    
+    cellSpell.src = "/Source/TurnBased/cell_spell.png";
+    imagePromises.push(new Promise((resolve) => {
+        cellSpell.onload = resolve;
+        cellSpell.onerror = resolve;
+    }));
+    
+    cloudColone.src = "/Source/TurnBased/cloud_colone.png";
+    imagePromises.push(new Promise((resolve) => {
+        cloudColone.onload = resolve;
+        cloudColone.onerror = resolve;
+    }));
+    
+    colone.src = "/Source/TurnBased/colone.png";
+    imagePromises.push(new Promise((resolve) => {
+        colone.onload = resolve;
+        colone.onerror = resolve;
+    }));
+    
+    
     Promise.all(imagePromises).then(() => {
         imagesLoaded = true;
         draw(); 
@@ -103,6 +173,7 @@ function preloadImages() {
 }
 
 function draw(){
+
     if (!imagesLoaded) {
         return;
     }
@@ -146,6 +217,36 @@ function draw(){
             
         }
     }
+
+    if(gameStatus == "turnBased"){
+
+        const canvasTurn = document.getElementById("canvas-turn");
+        canvasTurn.style = "display: block;"
+        ctxTurn.clearRect(0, 0, canvasTurn.width, canvasTurn.height);
+        
+        ctxTurn.drawImage(bgTurnBased, 0, 0);
+        ctxTurn.drawImage(battleGround, 15, 325);
+
+        ctxTurn.drawImage(colone, 100, 550);
+        ctxTurn.drawImage(cloudColone, 100, 750);
+
+        ctxTurn.drawImage(colone, 650, 300);
+        ctxTurn.drawImage(cloudColone, 620, 500);
+
+
+        ctxTurn.drawImage(bar, 155, 415, 100*(((hpUse*100)/hpCount[pieceOpponent.toLowerCase()])/100), 25);
+        //ctxTurn.drawImage(barHp, 155, 405, 100*(((hpUse*100)/hpCount[pieceUse.toLowerCase()])/100), 50);
+        ctxTurn.drawImage(ImgObj[pieceUse], 168, 460, 60, 125);
+
+        ctxTurn.drawImage(bar, 700, 165, 100*(((hpOpponent*100)/hpCount[pieceOpponent.toLowerCase()])/100), 25);
+        //ctxTurn.drawImage(barHp, 700, 155, 100*(((hpOpponent*100)/hpCount[pieceOpponent.toLowerCase()])/100), 50);
+        ctxTurn.drawImage(ImgObj[pieceOpponent], 718, 210, 60, 125);
+
+    }else{
+        const canvasTurn = document.getElementById("canvas-turn");
+        canvasTurn.style = "display: none;"
+    }
+
 }
 
 function getCell(x, y){
@@ -390,7 +491,7 @@ function updateGameStatus() {
     const hasMoves = hasValidMoves(currentTurn);
 
 
-    if(gameStatus == 'selectNewPawn'){
+    if(gameStatus == 'selectNewPawn' || gameStatus == 'turnBased'){
         return
     }
     if (!hasMoves) {
@@ -454,6 +555,21 @@ function movePiece(fromCol, fromRow, toCol, toRow) {
     msg = countTurn+". "+ pieceColor + ": " + String.fromCharCode(fromCol+65) + ""+ (8-fromRow) + " -> "+ String.fromCharCode(toCol+65) + ""+ (8-toRow)
     if(enemyColor(map[fromCol][fromRow],map[toCol][toRow])) msg+= " #"+map[toCol][toRow]
 
+
+    console.log("enem", enemyColor(map[fromCol][fromRow],map[toCol][toRow]),map[fromCol][fromRow],map[toCol][toRow])
+    if(enemyColor(map[fromCol][fromRow],map[toCol][toRow])){
+
+        gameStatus="turnBased"
+
+        pieceUse = map[fromCol][fromRow] 
+        pieceOpponent =  map[toCol][toRow]
+
+        updateData()
+        draw();
+        return
+    }
+
+
     if(piece =="p" && toRow == 0){
         map[toCol][toRow] = piece;
         gameStatus = 'selectNewPawn'
@@ -472,7 +588,6 @@ function movePiece(fromCol, fromRow, toCol, toRow) {
         map[toCol][toRow] = piece;
     }
 
-    
     map[fromCol][fromRow] = "";
 
     selectedPiece = null;

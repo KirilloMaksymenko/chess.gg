@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Covered+By+Your+Grace&family=Rock+Salt&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style_chess.css">
+    
+    <title>Chess.gg</title>
+</head>
+<body>
+    <div class="container">
+        <canvas id="canvas" width="1024" height="1024"></canvas>
+        <canvas id="canvas-turn" class="canvas-turn" width="1024" height="1024"></canvas>
+        <div class="">
+            <a class="exit-btn" href="/"><img class="bt-exit-img" src="/Source/bt_join.png" alt=""></a>
+            <div id="gameStatus" class="game-stat">
+                <div class="online-info">
+                    <p><strong>ID Room:</strong> <span id="room-id">Loading...</span></p>
+                    <p><strong>Timer:</strong> <span id="timer-m-id">10</span>:<span id="timer-s-id">00</span></p>
+                    <p><strong>Color:</strong> <span id="player-color">-</span></p>
+                    <strong>Spectators:</strong> <span id="spectators-count">-</span></p>
+                </div>
+                <div class="block-stat">
+                    <div>Turn: <span id="currentTurn">White</span></div>
+                    <div>Status: <span id="status">The game continue</span></div>
+                    <div class="">------------------------</div>
+                    <div id="move-count"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/script_turn_based.js"></script>
+</html>
