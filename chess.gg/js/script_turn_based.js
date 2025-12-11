@@ -41,6 +41,7 @@ const hpCount = {
     "q":125,
 }
 
+
 const ImgObj = {};
 const bgImage = new Image();
 const pointImage = new Image();
@@ -72,10 +73,11 @@ let gameStatus = 'playing'; // 'playing', 'check', 'checkmate', 'stalemate' ,'se
 let winner = null; // 'white', 'black', null
 let loseShow = false;
 
-let pieceUse = "K"
-let pieceOpponent = "q" 
-let hpUse = 200
-let hpOpponent = 125
+let pieceUse = null
+let pieceOpponent = null
+let hpUse = null
+let hpOpponent = null
+let currentBasedTurn = null
 
 // let timerWhite = 600;
 // let timerBlack = 600;
@@ -242,6 +244,37 @@ function draw(){
         //ctxTurn.drawImage(barHp, 700, 155, 100*(((hpOpponent*100)/hpCount[pieceOpponent.toLowerCase()])/100), 50);
         ctxTurn.drawImage(ImgObj[pieceOpponent], 718, 210, 60, 125);
 
+//// use spell for yourself
+        ctxTurn.drawImage(cellSpell, 135, 370, 110, 75);
+
+        ctxTurn.save();
+        ctxTurn.translate(270, 370)
+        ctxTurn.rotate(0.9)
+        ctxTurn.drawImage(cellSpell, 0, 0, 110, 75);
+        ctxTurn.restore();
+
+        ctxTurn.save();
+        ctxTurn.translate(350, 485)
+        ctxTurn.rotate(1.8)
+        ctxTurn.drawImage(cellSpell, 0, 0, 110, 75);
+        ctxTurn.restore();
+///
+
+///Enemy spell for use
+        ctxTurn.drawImage(cellSpell, 685, 110, 110, 75);
+
+        ctxTurn.save();
+        ctxTurn.translate(595, 220)
+        ctxTurn.rotate(-0.9)
+        ctxTurn.drawImage(cellSpell, 0, 0, 110, 75);
+        ctxTurn.restore();
+
+        ctxTurn.save();
+        ctxTurn.translate(625, 355)
+        ctxTurn.rotate(-1.8)
+        ctxTurn.drawImage(cellSpell, 0, 0, 110, 75);
+        ctxTurn.restore();
+///
     }else{
         const canvasTurn = document.getElementById("canvas-turn");
         canvasTurn.style = "display: none;"
@@ -541,6 +574,19 @@ function selectNewPawn(pos,L){
 
 }
 
+function startTurnBased(pieceUse,pieceOpponent){
+
+    const data = {
+        pieceW: pieceUse === pieceUse.toLowerCase() ? pieceUse : pieceOpponent,
+        pieceB: pieceUse === pieceUse.toUpperCase() ? pieceUse : pieceOpponent,
+        currentTurn: yourColor
+    }
+
+    socket.emit("start-turn-based",data)
+
+}   
+
+
 function movePiece(fromCol, fromRow, toCol, toRow) {
     countTurn += 1
 
@@ -558,15 +604,7 @@ function movePiece(fromCol, fromRow, toCol, toRow) {
 
     console.log("enem", enemyColor(map[fromCol][fromRow],map[toCol][toRow]),map[fromCol][fromRow],map[toCol][toRow])
     if(enemyColor(map[fromCol][fromRow],map[toCol][toRow])){
-
-        gameStatus="turnBased"
-
-        pieceUse = map[fromCol][fromRow] 
-        pieceOpponent =  map[toCol][toRow]
-
-        updateData()
-        draw();
-        return
+        return startTurnBased(map[fromCol][fromRow] ,map[toCol][toRow])
     }
 
 
@@ -654,6 +692,10 @@ function displayGameStatus() {
 function movePoint(e){
 
     if(yourColor !== currentTurn){
+        return
+    }
+
+    if(gameStatus == 'turnBase'){
         return
     }
 
@@ -944,12 +986,23 @@ socket.on('room-rejoined', function(data) {
             console.log('Player colors:', data.playerColors)
         }
 
+        gameStatus = data.gameInfo.gameStatus
+
+        if(gameStatus == "turnBased"){
+            pieceUse = yourColor === 'white' ? data.gameInfo.turnBasedInfo.pieceW : data.gameInfo.turnBasedInfo.pieceB
+            pieceOpponent = yourColor === 'black' ? data.gameInfo.turnBasedInfo.pieceW : data.gameInfo.turnBasedInfo.pieceB
+            
+            hpUse = yourColor === yourColor.toLowerCase() ? data.gameInfo.turnBasedInfo.pieceW : data.gameInfo.turnBasedInfo.pieceB
+            hpOpponent = yourColor === yourColor.toUpperCase() ? data.gameInfo.turnBasedInfo.pieceW : data.gameInfo.turnBasedInfo.pieceB
+    
+            currentBasedTurn = data.gameInfo.turnBasedInfo.currentTurn
+        }
+        
 
         countTurn = data.gameInfo.countTurn
         currentTurn = data.gameInfo.currentTurn
         gameStatus = data.gameInfo.gameStatus
         winner = data.gameInfo.winner
-        gamemode = data.gameInfo.gamemode
 
         flipMap(data.gameInfo.map)
         
@@ -1027,6 +1080,24 @@ socket.on('update-game-state', function(data){
 
 })
 
+socket.on("turn-based-update",function(data){
+
+    gameStatus = data.gameStatus
+
+    pieceUse = yourColor === yourColor.toLowerCase() ? data.turnBasedInfo.pieceW : data.turnBasedInfo.pieceB
+    pieceOpponent = yourColor === yourColor.toUpperCase() ? data.turnBasedInfo.pieceW : data.turnBasedInfo.pieceB
+    
+    hpUse = yourColor === yourColor.toLowerCase() ? data.turnBasedInfo.pieceW : data.turnBasedInfo.pieceB
+    hpOpponent = yourColor === yourColor.toUpperCase() ? data.turnBasedInfo.pieceW : data.turnBasedInfo.pieceB
+
+    currentBasedTurn = data.turnBasedInfo.currentTurn
+
+    draw()
+
+})
+
+
+
 
 socket.on("gameover-gg",function(data){
     if(!loseShow){
@@ -1041,9 +1112,6 @@ socket.on("gameover-gg",function(data){
 
         loseShow = true
     }
-    
-
-
 })          
 
 

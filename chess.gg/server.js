@@ -17,6 +17,15 @@ const newMap =[
     ["R","P","","","","","p","r"],
 ]
 
+const hpCount = {
+    "p":75,
+    "r":130,
+    "s":60,
+    "n":100,
+    "k":200,
+    "q":125,
+}
+
 const rooms = new Map() 
 const clientToRoom = new Map()
 const clientRole = new Map()
@@ -223,7 +232,14 @@ io.sockets.on('connection', function (client) {
                     log: [],
                     timerBlack: 600,
                     timerWhite: 600,
-                    disableTimer: false
+                    disableTimer: false,
+                    turnBasedInfo: {
+                        pieceW: null,
+                        pieceB: null,
+                        hpW: null,
+                        hpB: null,
+                        currentTurn: null,
+                    }
                 }
             })
             clientToRoom.set(client.id, roomId)
@@ -690,6 +706,25 @@ io.sockets.on('connection', function (client) {
 
         io.to(roomId).emit('gameover-gg',data)
     })
+
+
+
+    client.on("start-turn-based", function(data){
+
+        const roomId = clientToRoom.get(client.id)
+        const room = rooms.get(roomId)
+
+        room.gameInfo.gameStatus = "turnBased"
+        room.gameInfo.turnBasedInfo.pieceW = data.pieceW
+        room.gameInfo.turnBasedInfo.pieceB = data.pieceB
+        room.gameInfo.turnBasedInfo.hpW = hpCount[data.pieceW]
+        room.gameInfo.turnBasedInfo.hpB = hpCount[data.pieceB]
+        room.gameInfo.turnBasedInfo.currentTurn = data.currentTurn
+
+        io.to(roomId).emit('turn-based-update',room.gameInfo)
+    })
+
+
 
     client.on('disconnect', function () {
         console.log(`Client ${client.id} disconnected`)
