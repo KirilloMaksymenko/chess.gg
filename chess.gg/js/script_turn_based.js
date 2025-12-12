@@ -41,6 +41,32 @@ const hpCount = {
     "q":125,
 }
 
+const abilitiesPieces = {
+    "p":{
+        self:["evasion"],
+        opponent:["pawn-shoot"]
+    },
+    "s":{
+        self:["contre-attack","evasion"],
+        opponent:["bishop-shoot"] // ignore all shields/evasions
+    },
+    "r":{
+        self:["healing"],
+        opponent:["heavy-shoot","rook-shoot"]
+    },
+    "k":{
+        self:["stacking"],
+        opponent:["kamicadze"]
+    },
+    "q":{
+        self:["def-piece"],
+        opponent:["heavy-shoot","kamicadze","bishop-shoot"]
+    },
+    "k":{
+        self:["vampiring","spikes","prayers"],
+        opponent:[]
+    }
+}
 
 const ImgObj = {};
 const bgImage = new Image();
@@ -55,6 +81,9 @@ const bgTurnBased = new Image();
 const cellSpell = new Image();
 const cloudColone = new Image();
 const colone = new Image();
+const handUp = new Image()
+const handPush = new Image ()
+
 
 
 let imagesLoaded = false;
@@ -78,6 +107,7 @@ let pieceOpponent = null
 let hpUse = null
 let hpOpponent = null
 let currentBasedTurn = null
+let selectedPieceTurn = null
 
 // let timerWhite = 600;
 // let timerBlack = 600;
@@ -166,6 +196,18 @@ function preloadImages() {
         colone.onload = resolve;
         colone.onerror = resolve;
     }));
+
+    handUp.src = "/Source/TurnBased/IMG_0211.png";
+    imagePromises.push(new Promise((resolve) => {
+        handUp.onload = resolve;
+        handUp.onerror = resolve;
+    }));
+
+    handPush.src = "/Source/TurnBased/IMG_0212.png";
+    imagePromises.push(new Promise((resolve) => {
+        handPush.onload = resolve;
+        handPush.onerror = resolve;
+    }));
     
     
     Promise.all(imagePromises).then(() => {
@@ -224,6 +266,7 @@ function draw(){
 
         const canvasTurn = document.getElementById("canvas-turn");
         canvasTurn.style = "display: block;"
+        document.getElementById("panel-sq").style = "display: block;"
         ctxTurn.clearRect(0, 0, canvasTurn.width, canvasTurn.height);
         
         ctxTurn.drawImage(bgTurnBased, 0, 0);
@@ -235,51 +278,44 @@ function draw(){
         ctxTurn.drawImage(colone, 650, 300);
         ctxTurn.drawImage(cloudColone, 620, 500);
 
-
-        ctxTurn.drawImage(bar, 120, 580, 100*(((hpUse*100)/hpCount[pieceOpponent.toLowerCase()])/100), 25);
-        //ctxTurn.drawImage(barHp, 155, 405, 100*(((hpUse*100)/hpCount[pieceUse.toLowerCase()])/100), 50);
+        //ctxTurn.drawImage(handUp, 125, 480, 60, 100);
         ctxTurn.drawImage(ImgObj[pieceUse], 168, 460, 60, 125);
+        //ctxTurn.drawImage(handPush, 200, 490, 100, 60);
+        
 
-        ctxTurn.drawImage(bar, 700, 330, 100*(((hpOpponent*100)/hpCount[pieceOpponent.toLowerCase()])/100), 25);
-        //ctxTurn.drawImage(barHp, 700, 155, 100*(((hpOpponent*100)/hpCount[pieceOpponent.toLowerCase()])/100), 50);
         ctxTurn.drawImage(ImgObj[pieceOpponent], 718, 210, 60, 125);
 
-//// use spell for yourself
-        ctxTurn.drawImage(cellSpell, 135, 370, 110, 75);
 
-        ctxTurn.save();
-        ctxTurn.translate(270, 435)
-        ctxTurn.rotate(0.9)
-        ctxTurn.drawImage(cellSpell, -(cellSpell.width/2), -(cellSpell.height/2), 110, 75);
-        ctxTurn.restore();
+        if(selectedPieceTurn==="use"){
+            ctxTurn.drawImage(bar, 150, 595, 100, 25);
+            ctxTurn.drawImage(barHp,0,0,100*(hpUse/hpCount[pieceUse.toLowerCase()]),50, 150, 590, 105*(hpUse/hpCount[pieceUse.toLowerCase()]), 50);
 
-        ctxTurn.save();
-        ctxTurn.translate(300, 518)
-        ctxTurn.rotate(1.8)
-        ctxTurn.drawImage(cellSpell, -(cellSpell.width/2), -(cellSpell.height/2), 110, 75);
-        ctxTurn.restore();
-///
+            const posUse = [[190,405,0],[270,435,0.9],[300,518,1.8]]
+            for (let i = 0; i < abilitiesPieces[pieceUse.toLowerCase()].self.length; i++) {
+                ctxTurn.save();
+                ctxTurn.translate(posUse[i][0], posUse[i][1])
+                ctxTurn.rotate(posUse[i][2])
+                ctxTurn.drawImage(cellSpell, -(cellSpell.width/2), -(cellSpell.height/2), 110, 75);
+                ctxTurn.restore();  
+            }
+        }
+        if(selectedPieceTurn==="opponent"){
+            ctxTurn.drawImage(bar, 700, 340, 100, 25);
+            ctxTurn.drawImage(barHp,0,0,100*(hpOpponent/hpCount[pieceOpponent.toLowerCase()]),50, 700, 335, 105*(hpOpponent/hpCount[pieceOpponent.toLowerCase()]), 50);
 
-///Enemy spell for use
-        ctxTurn.drawImage(cellSpell, 685, 110, 110, 75);
-
-        ctxTurn.save();
-        ctxTurn.translate(665, 190)
-        ctxTurn.rotate(-0.9)
-        ctxTurn.drawImage(cellSpell, -(cellSpell.width/2), -(cellSpell.height/2), 110, 75);
-        ctxTurn.restore();
-
-        ctxTurn.save();
-        ctxTurn.translate(655, 280)
-        ctxTurn.rotate(-1.8)
-        ctxTurn.drawImage(cellSpell, -(cellSpell.width/2), -(cellSpell.height/2), 110, 75);
-        ctxTurn.restore();
-///
-
+            const posOpponent = [[740,145,0],[665,190,-0.9],[655,280,-1.8]]
+            for (let i = 0; i < abilitiesPieces[pieceUse.toLowerCase()].opponent.length; i++) {
+                ctxTurn.save();
+                ctxTurn.translate(posOpponent[i][0], posOpponent[i][1])
+                ctxTurn.rotate(posOpponent[i][2])
+                ctxTurn.drawImage(cellSpell, -(cellSpell.width/2), -(cellSpell.height/2), 110, 75);
+                ctxTurn.restore();  
+            }
+        }
 
     }else{
-        const canvasTurn = document.getElementById("canvas-turn");
-        canvasTurn.style = "display: none;"
+        document.getElementById("canvas-turn").style = "display: none;"
+        document.getElementById("panel-sq").style = "display: none;"
     }
 
 }
@@ -427,24 +463,21 @@ function handleTurnBasedClick(e) {
 
 
     if (getPlayerSpellCell(scaledX, scaledY) !== null) {
-        console.log(`Player spell cell ${getPlayerSpellCell(scaledX, scaledY)} clicked`);
-        return;
+        console.log(abilitiesPieces[pieceUse.toLowerCase()].self[getPlayerSpellCell(scaledX, scaledY)-1])
+    }else if (getOpponentSpellCell(scaledX, scaledY) !== null) {
+        console.log(abilitiesPieces[pieceUse.toLowerCase()].opponent[getOpponentSpellCell(scaledX, scaledY)-1])
+    }else if (scaledX >= 168 && scaledX <= 168 + 60 && scaledY >= 460 && scaledY <= 460 + 125) {
+        console.log("Player piece");
+        selectedPieceTurn = "use"
+    }else if (scaledX >= 718 && scaledX <= 718 + 60 && scaledY >= 210 && scaledY <= 210 + 125) {
+        console.log("Opponent piece");
+        selectedPieceTurn = "opponent"
+    }else{
+        selectedPieceTurn = null   
     }
 
-    if (getOpponentSpellCell(scaledX, scaledY) !== null) {
-        console.log(`Opponent spell cell ${getOpponentSpellCell(scaledX, scaledY)} clicked`);
-        return;
-    }
+    draw()
     
-    if (scaledX >= 168 && scaledX <= 168 + 60 && scaledY >= 460 && scaledY <= 460 + 125) {
-        console.log("Player's piece clicked");
-        return;
-    }
-    
-    if (scaledX >= 718 && scaledX <= 718 + 60 && scaledY >= 210 && scaledY <= 210 + 125) {
-        console.log("Opponent's piece clicked");
-        return;
-    }
 }
 
 function pawnMoves(piece, pos, collectMoves = false) {
@@ -577,7 +610,7 @@ function wouldMovePutKingInCheck(fromCol, fromRow, toCol, toRow, color) {
     map[toCol][toRow] = originalPiece;
     map[fromCol][fromRow] = "";
     
-    const inCheck = isKingInCheck(color);
+    const inCheck = false;
     
     map[fromCol][fromRow] = originalPiece;
     map[toCol][toRow] = targetPiece;

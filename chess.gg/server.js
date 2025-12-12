@@ -26,6 +26,62 @@ const hpCount = {
     "q":125,
 }
 
+const abilitiesPieces = {
+    "p":{
+        self:{
+            "evasion":null
+        },
+        opponent:{
+            "pawn-shoot":null
+        }
+    },
+    "s":{
+        self:{
+            "contre-attack":null,
+            "evasion":null
+        },
+        opponent:{
+            "bishop-shoot":null
+        } // ignore all shields/evasions, 45% dmg after shield and etc.
+    },
+    "r":{
+        self:{
+            "healing":null
+        },
+        opponent:{
+            "heavy-shoot":null,
+            "rook-shoot":null
+        }
+    },
+    "k":{
+        self:{
+            "stacking":null
+        },
+        opponent:{
+            "kamicadze":null
+        }
+    },
+    "q":{
+        self:{
+            "def-piece":null
+        },
+        opponent:{
+            "heavy-shoot":null,
+            "kamicadze":null,
+            "bishop-shoot":null
+        }
+    },
+    "k":{
+        self:{
+            "vampiring": null,
+            "spikes": null,
+            "prayers":null,
+        },
+        opponent:{}
+    }
+}
+
+
 const rooms = new Map() 
 const clientToRoom = new Map()
 const clientRole = new Map()
@@ -239,6 +295,24 @@ io.sockets.on('connection', function (client) {
                         hpW: null,
                         hpB: null,
                         currentTurn: null,
+                        abilities:{
+                            pieceW:{
+                                evasion:0,
+                                contrAttack:0,
+                                skipTurn:false,
+                                stacks:1,
+                                spikes:0,
+                                usePrayers:false,
+                            },
+                            pieceB:{
+                                evasion:0,
+                                contrAttack:0,
+                                skipTurn:false,
+                                stacks:1,
+                                spikes:0,
+                                usePrayers:false,
+                            }
+                        }
                     }
                 }
             })
@@ -723,6 +797,87 @@ io.sockets.on('connection', function (client) {
 
         io.to(roomId).emit('turn-based-update',room.gameInfo)
     })
+
+
+    // "p":{
+    //     self:["evasion"],
+    //     opponent:["pawn-shoot"]
+    // },
+    // "s":{
+    //     self:["contre-attack","evasion"],
+    //     opponent:["bishop-shoot"] // ignore all shields/evasions
+    // },
+    // "r":{
+    //     self:["healing"],
+    //     opponent:["heavy-shoot","rook-shoot"]
+    // },
+    // "k":{
+    //     self:["stacking"],
+    //     opponent:["kamicadze"]
+    // },
+    // "q":{
+    //     self:["def-piece"],
+    //     opponent:["heavy-shoot","kamicadze","bishop-shoot"]
+    // },
+    // "k":{
+    //     self:["vampiring","spikes","prayers"],
+    //     opponent:[]
+    // }
+
+    client.on("evasion-send", function(data){
+
+    })
+    client.on("pawn-shoot-send", function(data){
+        
+    })
+
+
+
+    client.on("contre-attack-send", function(data){
+        
+    })
+    client.on("bishop-shoot-send", function(data){
+        
+    })
+
+
+
+    client.on("healing-send", function(data){
+        
+    })
+    client.on("heavy-shoot-send", function(data){
+        
+    })
+    client.on("rook-shoot-send", function(data){
+        
+    })
+
+
+
+    client.on("stacking-send", function(data){
+        
+    })
+    client.on("kamicadze-send", function(data){
+        
+    })
+
+
+
+    client.on("def-piece-send", function(data){
+
+    })
+
+
+    client.on("vampiring-send", function(data){
+        
+    })
+    client.on("spikes-send", function(data){
+
+    })
+    client.on("prayers-send", function(data){
+        
+    })
+    
 
 
 
