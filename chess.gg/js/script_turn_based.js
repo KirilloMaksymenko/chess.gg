@@ -236,11 +236,11 @@ function draw(){
         ctxTurn.drawImage(cloudColone, 620, 500);
 
 
-        ctxTurn.drawImage(bar, 155, 415, 100*(((hpUse*100)/hpCount[pieceOpponent.toLowerCase()])/100), 25);
+        ctxTurn.drawImage(bar, 120, 580, 100*(((hpUse*100)/hpCount[pieceOpponent.toLowerCase()])/100), 25);
         //ctxTurn.drawImage(barHp, 155, 405, 100*(((hpUse*100)/hpCount[pieceUse.toLowerCase()])/100), 50);
         ctxTurn.drawImage(ImgObj[pieceUse], 168, 460, 60, 125);
 
-        ctxTurn.drawImage(bar, 700, 165, 100*(((hpOpponent*100)/hpCount[pieceOpponent.toLowerCase()])/100), 25);
+        ctxTurn.drawImage(bar, 700, 330, 100*(((hpOpponent*100)/hpCount[pieceOpponent.toLowerCase()])/100), 25);
         //ctxTurn.drawImage(barHp, 700, 155, 100*(((hpOpponent*100)/hpCount[pieceOpponent.toLowerCase()])/100), 50);
         ctxTurn.drawImage(ImgObj[pieceOpponent], 718, 210, 60, 125);
 
@@ -248,15 +248,15 @@ function draw(){
         ctxTurn.drawImage(cellSpell, 135, 370, 110, 75);
 
         ctxTurn.save();
-        ctxTurn.translate(270, 370)
+        ctxTurn.translate(270, 435)
         ctxTurn.rotate(0.9)
-        ctxTurn.drawImage(cellSpell, 0, 0, 110, 75);
+        ctxTurn.drawImage(cellSpell, -(cellSpell.width/2), -(cellSpell.height/2), 110, 75);
         ctxTurn.restore();
 
         ctxTurn.save();
-        ctxTurn.translate(350, 485)
+        ctxTurn.translate(300, 518)
         ctxTurn.rotate(1.8)
-        ctxTurn.drawImage(cellSpell, 0, 0, 110, 75);
+        ctxTurn.drawImage(cellSpell, -(cellSpell.width/2), -(cellSpell.height/2), 110, 75);
         ctxTurn.restore();
 ///
 
@@ -264,17 +264,19 @@ function draw(){
         ctxTurn.drawImage(cellSpell, 685, 110, 110, 75);
 
         ctxTurn.save();
-        ctxTurn.translate(595, 220)
+        ctxTurn.translate(665, 190)
         ctxTurn.rotate(-0.9)
-        ctxTurn.drawImage(cellSpell, 0, 0, 110, 75);
+        ctxTurn.drawImage(cellSpell, -(cellSpell.width/2), -(cellSpell.height/2), 110, 75);
         ctxTurn.restore();
 
         ctxTurn.save();
-        ctxTurn.translate(625, 355)
+        ctxTurn.translate(655, 280)
         ctxTurn.rotate(-1.8)
-        ctxTurn.drawImage(cellSpell, 0, 0, 110, 75);
+        ctxTurn.drawImage(cellSpell, -(cellSpell.width/2), -(cellSpell.height/2), 110, 75);
         ctxTurn.restore();
 ///
+
+
     }else{
         const canvasTurn = document.getElementById("canvas-turn");
         canvasTurn.style = "display: none;"
@@ -352,6 +354,135 @@ canvas.addEventListener("touchstart", (e) => {
     e.preventDefault();
     movePoint(e);
 }, true);
+
+const canvasTurn = document.getElementById("canvas-turn");
+canvasTurn.addEventListener("click", handleTurnBasedClick, true);
+canvasTurn.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    handleTurnBasedClick(e);
+}, true);
+
+function isPointInRotatedRect(px, py, centerX, centerY, width, height, rotation) {
+    const dx = px - centerX;
+    const dy = py - centerY;
+    
+    const cos = Math.cos(-rotation);
+    const sin = Math.sin(-rotation);
+    const rotatedX = dx * cos - dy * sin;
+    const rotatedY = dx * sin + dy * cos;
+    
+    return Math.abs(rotatedX) <= width / 2 && Math.abs(rotatedY) <= height / 2;
+}
+
+function isPointInRect(px, py, x, y, width, height) {
+    return px >= x && px <= x + width && py >= y && py <= y + height;
+}
+
+function getPlayerSpellCell(x, y) {
+    const spellWidth = 110;
+    const spellHeight = 75;
+    
+    if (isPointInRect(x, y, 135, 370, spellWidth, spellHeight)) {
+        return 1;
+    }
+    
+    if (isPointInRotatedRect(x, y, 270, 435, spellWidth, spellHeight, 0.9)) {
+        return 2;
+    }
+
+    if (isPointInRotatedRect(x, y, 300, 518, spellWidth, spellHeight, 1.8)) {
+        return 3;
+    }
+    
+    return null;
+}
+
+
+function getOpponentSpellCell(x, y) {
+    const spellWidth = 110;
+    const spellHeight = 75;
+    
+    if (isPointInRect(x, y, 685, 110, spellWidth, spellHeight)) {
+        return 1;
+    }
+
+    if (isPointInRotatedRect(x, y, 665, 190, spellWidth, spellHeight, -0.9)) {
+        return 2;
+    }
+    
+    if (isPointInRotatedRect(x, y, 655, 280, spellWidth, spellHeight, -1.8)) {
+        return 3;
+    }
+    
+    return null;
+}
+
+function isPlayerPieceClicked(x, y) {
+    const pieceX = 168;
+    const pieceY = 460;
+    const pieceWidth = 60;
+    const pieceHeight = 125;
+    
+    return isPointInRect(x, y, pieceX, pieceY, pieceWidth, pieceHeight);
+}
+
+function isOpponentPieceClicked(x, y) {
+    const pieceX = 718;
+    const pieceY = 210;
+    const pieceWidth = 60;
+    const pieceHeight = 125;
+    
+    return isPointInRect(x, y, pieceX, pieceY, pieceWidth, pieceHeight);
+}
+
+function handleTurnBasedClick(e) {
+    if (gameStatus !== 'turnBased') {
+        return;
+    }
+    if (currentBasedTurn !== yourColor) {
+        console.log("Not your turn");
+        return;
+    }
+    
+    const x = e.clientX || e.touches?.[0]?.clientX;
+    const y = e.clientY || e.touches?.[0]?.clientY;
+    
+    if (!x || !y) {
+        return;
+    }
+    
+    const rect = canvasTurn.getBoundingClientRect();
+    const canvasX = x - rect.left;
+    const canvasY = y - rect.top;
+    
+    const scaleX = canvasTurn.width / rect.width;
+    const scaleY = canvasTurn.height / rect.height;
+    
+    const scaledX = canvasX * scaleX;
+    const scaledY = canvasY * scaleY;
+
+    const playerSpell = getPlayerSpellCell(scaledX, scaledY);
+    if (playerSpell !== null) {
+        console.log(`Player spell cell ${playerSpell} clicked`);
+        return;
+    }
+
+    const opponentSpell = getOpponentSpellCell(scaledX, scaledY);
+    if (opponentSpell !== null) {
+        console.log(`Opponent spell cell ${opponentSpell} clicked`);
+        return;
+    }
+    
+    if (isPlayerPieceClicked(scaledX, scaledY)) {
+        console.log("Player's piece clicked");
+        return;
+    }
+    
+    if (isOpponentPieceClicked(scaledX, scaledY)) {
+        console.log("Opponent's piece clicked");
+        return;
+    }
+}
 
 function pawnMoves(piece, pos, collectMoves = false) {
     const moves = [];
@@ -1086,11 +1217,13 @@ socket.on("turn-based-update",function(data){
 
     gameStatus = data.gameStatus
 
-    pieceUse = yourColor === yourColor === 'white' ? data.turnBasedInfo.pieceW : data.turnBasedInfo.pieceB
-    pieceOpponent = yourColor === yourColor === 'black' ? data.turnBasedInfo.pieceW : data.turnBasedInfo.pieceB
+    pieceUse = yourColor === 'white' ? data.turnBasedInfo.pieceW : data.turnBasedInfo.pieceB
+    pieceOpponent = yourColor === 'black' ? data.turnBasedInfo.pieceW : data.turnBasedInfo.pieceB
     
-    hpUse = yourColor === 'white' ? data.turnBasedInfo.hpW : data.turnBasedInfo.hpB
-    hpOpponent = yourColor === 'black' ? data.turnBasedInfo.hpW : data.turnBasedInfo.hpB
+    console.log(data)
+    
+    hpUse =  yourColor === 'white' ? data.turnBasedInfo.hpW : data.turnBasedInfo.hpB
+    hpOpponent =  yourColor === 'black' ? data.turnBasedInfo.hpW : data.turnBasedInfo.hpB
 
     currentBasedTurn = data.turnBasedInfo.currentTurn
 
