@@ -362,77 +362,41 @@ canvasTurn.addEventListener("touchstart", (e) => {
     handleTurnBasedClick(e);
 }, true);
 
-function isPointInRotatedRect(px, py, centerX, centerY, width, height, rotation) {
-    const dx = px - centerX;
-    const dy = py - centerY;
-    
-    const cos = Math.cos(-rotation);
-    const sin = Math.sin(-rotation);
-    const rotatedX = dx * cos - dy * sin;
-    const rotatedY = dx * sin + dy * cos;
-    
-    return Math.abs(rotatedX) <= width / 2 && Math.abs(rotatedY) <= height / 2;
-}
 
-function isPointInRect(px, py, x, y, width, height) {
-    return px >= x && px <= x + width && py >= y && py <= y + height;
-}
+
 
 function getPlayerSpellCell(x, y) {
-    const spellWidth = 110;
-    const spellHeight = 75;
     
-    if (isPointInRect(x, y, 135, 370, spellWidth, spellHeight)) {
+    if (x >= 135 && x <= 135 + 110 && y >= 370 && y <= 370 + 75) {
         return 1;
     }
     
-    if (isPointInRotatedRect(x, y, 270, 435, spellWidth, spellHeight, 0.9)) {
+    if (Math.abs((x - 270) * Math.cos(-0.9) - (y - 435) * Math.sin(-0.9)) <= 110 / 2 && Math.abs((x - 270) * Math.sin(-0.9) + (y - 435) * Math.cos(-0.9)) <= 75 / 2) {
         return 2;
     }
 
-    if (isPointInRotatedRect(x, y, 300, 518, spellWidth, spellHeight, 1.8)) {
+    if (Math.abs((x - 300) * Math.cos(-1.8) - (y - 518) * Math.sin(-1.8)) <= 110 / 2 && Math.abs((x - 300) * Math.sin(-1.8) + (y - 518) * Math.cos(-1.8)) <= 75 / 2) {
         return 3;
     }
-    
     return null;
 }
 
 
 function getOpponentSpellCell(x, y) {
-    const spellWidth = 110;
-    const spellHeight = 75;
-    
-    if (isPointInRect(x, y, 685, 110, spellWidth, spellHeight)) {
+        
+    if (x >= 685 && x <= 685 + 110 && y >= 110 && y <= 110 + 75) {
         return 1;
     }
-
-    if (isPointInRotatedRect(x, y, 665, 190, spellWidth, spellHeight, -0.9)) {
+    
+    if (Math.abs((x - 665) * Math.cos(0.9) - (y - 190) * Math.sin(0.9)) <= 110 / 2 && Math.abs((x - 665) * Math.sin(0.9) + (y - 190) * Math.cos(0.9)) <= 75 / 2) {
         return 2;
     }
     
-    if (isPointInRotatedRect(x, y, 655, 280, spellWidth, spellHeight, -1.8)) {
+    if (Math.abs((x - 655) * Math.cos(1.8) - (y - 280) * Math.sin(1.8)) <= 110 / 2 && Math.abs((x - 655) * Math.sin(1.8) + (y - 280) * Math.cos(1.8)) <= 75 / 2) {
         return 3;
     }
     
     return null;
-}
-
-function isPlayerPieceClicked(x, y) {
-    const pieceX = 168;
-    const pieceY = 460;
-    const pieceWidth = 60;
-    const pieceHeight = 125;
-    
-    return isPointInRect(x, y, pieceX, pieceY, pieceWidth, pieceHeight);
-}
-
-function isOpponentPieceClicked(x, y) {
-    const pieceX = 718;
-    const pieceY = 210;
-    const pieceWidth = 60;
-    const pieceHeight = 125;
-    
-    return isPointInRect(x, y, pieceX, pieceY, pieceWidth, pieceHeight);
 }
 
 function handleTurnBasedClick(e) {
@@ -461,24 +425,23 @@ function handleTurnBasedClick(e) {
     const scaledX = canvasX * scaleX;
     const scaledY = canvasY * scaleY;
 
-    const playerSpell = getPlayerSpellCell(scaledX, scaledY);
-    if (playerSpell !== null) {
-        console.log(`Player spell cell ${playerSpell} clicked`);
+
+    if (getPlayerSpellCell(scaledX, scaledY) !== null) {
+        console.log(`Player spell cell ${getPlayerSpellCell(scaledX, scaledY)} clicked`);
         return;
     }
 
-    const opponentSpell = getOpponentSpellCell(scaledX, scaledY);
-    if (opponentSpell !== null) {
-        console.log(`Opponent spell cell ${opponentSpell} clicked`);
+    if (getOpponentSpellCell(scaledX, scaledY) !== null) {
+        console.log(`Opponent spell cell ${getOpponentSpellCell(scaledX, scaledY)} clicked`);
         return;
     }
     
-    if (isPlayerPieceClicked(scaledX, scaledY)) {
+    if (scaledX >= 168 && scaledX <= 168 + 60 && scaledY >= 460 && scaledY <= 460 + 125) {
         console.log("Player's piece clicked");
         return;
     }
     
-    if (isOpponentPieceClicked(scaledX, scaledY)) {
+    if (scaledX >= 718 && scaledX <= 718 + 60 && scaledY >= 210 && scaledY <= 210 + 125) {
         console.log("Opponent's piece clicked");
         return;
     }
