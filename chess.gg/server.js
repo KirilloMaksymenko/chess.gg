@@ -254,14 +254,32 @@ function cleanupRoom(roomId) {
 
     const playersCount = room.players ? room.players.length : 0
     const spectatorsCount = room.spectators ? room.spectators.length : 0
+    const originalPlayersCount = room.originalPlayerOrder ? room.originalPlayerOrder.filter(id => id).length : 0
     const createdAt = room.createdAt || 0
     const roomAgeMs = Date.now() - createdAt
 
-    const EMPTY_ROOM_TIMEOUT_MS =   5 * 1000 
+    const EMPTY_ROOM_TIMEOUT_MS = 5 * 1000 
+    // Більший таймаут для кімнат з гравцями в originalPlayerOrder (вони можуть переприєднатися)
+    const ROOM_WITH_PLAYERS_TIMEOUT_MS = 60 * 1000 // 60 секунд
 
-    if (playersCount === 0 && spectatorsCount === 0 && roomAgeMs > EMPTY_ROOM_TIMEOUT_MS) {
+    // Не видаляємо кімнату якщо:
+    // 1. Є активні гравці або глядачі
+    // 2. Є гравці в originalPlayerOrder (вони можуть переприєднатися) - даємо більше часу
+    // 3. Кімната ще дуже нова (менше 5 секунд)
+    if (playersCount === 0 && spectatorsCount === 0 && originalPlayersCount === 0 && roomAgeMs > EMPTY_ROOM_TIMEOUT_MS) {
+        // Повністю порожня кімната без гравців в originalPlayerOrder
         rooms.delete(roomId)
         console.log(`Room ${roomId} deleted (empty for more than ${EMPTY_ROOM_TIMEOUT_MS / 1000} sec)`)
+    } else if (originalPlayersCount > 0 && playersCount === 0) {
+        // Якщо є гравці в originalPlayerOrder, але немає активних гравців,
+        // це означає що гравці тимчасово відключені і можуть переприєднатися
+        // Видаляємо тільки якщо кімната дуже стара
+        if (roomAgeMs > ROOM_WITH_PLAYERS_TIMEOUT_MS) {
+            rooms.delete(roomId)
+            console.log(`Room ${roomId} deleted (has players in originalPlayerOrder but no active players for more than ${ROOM_WITH_PLAYERS_TIMEOUT_MS / 1000} sec)`)
+        } else {
+            console.log(`Room ${roomId} kept alive (has ${originalPlayersCount} players in originalPlayerOrder who may rejoin, age: ${Math.round(roomAgeMs / 1000)}s)`)
+        }
     }
 }
 
@@ -427,24 +445,36 @@ io.sockets.on('connection', function (client) {
             let role
             let color = null
             const currentPlayersCount = room.players.length
+
+            const uniqueOrder = []
+            const seenOrderIds = new Set()
+            for (const id of room.originalPlayerOrder) {
+                if (!seenOrderIds.has(id) && id) {
+                    uniqueOrder.push(id)
+                    seenOrderIds.add(id)
+                }
+            }
+            room.originalPlayerOrder = uniqueOrder
+            
             const originalPlayersCount = room.originalPlayerOrder.length
             if (currentPlayersCount < 2) {
                 role = 'player'
-                
-                if (originalPlayersCount === 0) {
+
+                const existingIndex = room.originalPlayerOrder.indexOf(client.id)
+                if (existingIndex !== -1) {
+                    color = existingIndex === 0 ? 'white' : 'black'
+                    console.log(`Client ${client.id} already in originalPlayerOrder at position ${existingIndex}, color: ${color}`)
+                } else if (originalPlayersCount === 0) {
                     color = 'white'
+                    console.log("PAIL ",client.id,room.originalPlayerOrder)
                     room.originalPlayerOrder.push(client.id)
                 } else if (originalPlayersCount === 1) {
                     color = 'black'
+                    console.log("PAIL ",client.id,room.originalPlayerOrder)
                     room.originalPlayerOrder.push(client.id)
                 } else {
-                    const originalIndex = room.originalPlayerOrder.indexOf(client.id)
-                    if (originalIndex !== -1) {
-                        color = originalIndex === 0 ? 'white' : 'black'
-                    } else {
-                        color = currentPlayersCount === 0 ? 'white' : 'black'
-                        room.originalPlayerOrder.push(client.id)
-                    }
+                    color = currentPlayersCount === 0 ? 'white' : 'black'
+                    console.log("PAIL - not adding to originalPlayerOrder (already full):", client.id, room.originalPlayerOrder)
                 }
                 
                 room.players.push(client.id)
@@ -475,24 +505,52 @@ io.sockets.on('connection', function (client) {
             io.emit('rooms-list', updatedRooms)
 
             if (room.players.length === 2) {
+                const uniqueOrder = []
+                const seenOrderIds = new Set()
+                for (const id of room.originalPlayerOrder) {
+                    if (!seenOrderIds.has(id) && id) {
+                        uniqueOrder.push(id)
+                        seenOrderIds.add(id)
+                    }
+                }
+                room.originalPlayerOrder = uniqueOrder
+                
                 const redirectUrl = `/game/${room.gameInfo.gamemode}?roomId=${roomId}`
                 console.log(`Redirecting room ${roomId} to ${redirectUrl}`)
                 console.log(`Room players array:`, room.players)
+                console.log(`Room originalPlayerOrder:`, room.originalPlayerOrder)
                 console.log(`Room playerColors:`, room.playerColors)
-                room.players.forEach((playerId, index) => {
-                    const playerColor = index === 0 ? 'white' : 'black'
+
+                room.players.forEach((playerId) => {
+                    const originalIndex = room.originalPlayerOrder.indexOf(playerId)
+                    let playerColor
+                    if (originalIndex !== -1) {
+                        playerColor = originalIndex === 0 ? 'white' : 'black'
+                    } else {
+                        const playerIndex = room.players.indexOf(playerId)
+                        playerColor = playerIndex === 0 ? 'white' : 'black'
+                        if (room.originalPlayerOrder.length < 2 && !room.originalPlayerOrder.includes(playerId)) {
+                            room.originalPlayerOrder.push(playerId)
+                            console.log(`Added ${playerId} to originalPlayerOrder at position ${room.originalPlayerOrder.length - 1}`)
+                        }
+                    }
+                    
                     if (!room.playerColors) {
                         room.playerColors = {}
                     }
                     room.playerColors[playerId] = playerColor
                     setClientColor(playerId, playerColor)
-                    console.log(`Player ${playerId} at position ${index} is assigned color ${playerColor}`)
+                    const playerNumber = originalIndex !== -1 ? originalIndex + 1 : room.players.indexOf(playerId) + 1
+                    console.log(`Player ${playerId} at original position ${originalIndex} is assigned color ${playerColor}`)
                     io.to(playerId).emit('redirect', redirectUrl)
                     io.to(playerId).emit('player-color-assigned', {
                         color: playerColor,
-                        playerNumber: index + 1
+                        playerNumber: playerNumber
                     })
                 })
+                
+                console.log(`FINAL after redirect: originalPlayerOrder:`, room.originalPlayerOrder)
+                console.log(`FINAL after redirect: playerColors:`, room.playerColors)
                 
             } else {
                 client.emit('room-joined', { 
@@ -511,7 +569,12 @@ io.sockets.on('connection', function (client) {
         try {
             const { roomId } = data
 
+            console.log(`Client ${client.id} attempting to rejoin room ${roomId}`)
+            console.log(`Total rooms: ${rooms.size}`)
+            console.log(`Available room IDs:`, Array.from(rooms.keys()))
+
             if (!rooms.has(roomId)) {
+                console.error(`Room ${roomId} not found! Available rooms:`, Array.from(rooms.keys()))
                 client.emit('error', { message: 'Room not found' })
                 return
             }
@@ -528,15 +591,28 @@ io.sockets.on('connection', function (client) {
                 room.originalPlayerOrder = []
             }
 
+            const uniqueOriginalOrder = []
+            const seenIds = new Set()
+            for (const id of room.originalPlayerOrder) {
+                if (!seenIds.has(id)) {
+                    uniqueOriginalOrder.push(id)
+                    seenIds.add(id)
+                }
+            }
+            room.originalPlayerOrder = uniqueOriginalOrder
+            
             if (room.originalPlayerOrder.length > 0) {
                 const disconnectedSockets = room.originalPlayerOrder.filter(oldSocketId => {
                     return !room.players.includes(oldSocketId)
                 })
                 
-                if (disconnectedSockets.length > 0 && room.players.length < 2) {
+                const alreadyInOrder = room.originalPlayerOrder.includes(client.id)
+                
+                if (disconnectedSockets.length > 0 && room.players.length < 2 && !alreadyInOrder) {
                     for (let i = 0; i < room.originalPlayerOrder.length; i++) {
                         const oldSocketId = room.originalPlayerOrder[i]
                         if (!room.players.includes(oldSocketId)) {
+                            console.log("MAIL ",room.originalPlayerOrder[i],client.id,room.originalPlayerOrder)
                             room.originalPlayerOrder[i] = client.id
                             console.log(`Replaced old socket.id ${oldSocketId} with new ${client.id} at position ${i} in originalPlayerOrder`)
                             if (room.playerColors[oldSocketId]) {
@@ -547,7 +623,9 @@ io.sockets.on('connection', function (client) {
                         }
                     }
                 } else {
-                    room.originalPlayerOrder = room.originalPlayerOrder.filter(id => room.players.includes(id))
+                    room.originalPlayerOrder = room.originalPlayerOrder.filter(id => {
+                        return room.players.includes(id) || id === client.id
+                    })
                     console.log(`Cleaned originalPlayerOrder, removed disconnected sockets`)
                 }
             }
@@ -587,24 +665,37 @@ io.sockets.on('connection', function (client) {
                     color = existingIndex === 0 ? 'white' : 'black'
                     console.log(`Found existing position ${existingIndex} for ${client.id} in originalPlayerOrder, color: ${color}`)
                 } else {
-                    if (room.originalPlayerOrder.length < 2) {
+                    if (room.originalPlayerOrder.length < 2 && !room.originalPlayerOrder.includes(client.id)) {
                         const newIndex = room.originalPlayerOrder.length
+                        console.log("PAIL ",client.id,room.originalPlayerOrder)
                         room.originalPlayerOrder.push(client.id)
                         color = newIndex === 0 ? 'white' : 'black'
                         console.log(`Added ${client.id} to originalPlayerOrder at position ${newIndex}, color: ${color}`)
-                    } else {
-                        for (let i = 0; i < room.originalPlayerOrder.length; i++) {
-                            const oldSocketId = room.originalPlayerOrder[i]
-                            if (!room.players.includes(oldSocketId)) {
-                                room.originalPlayerOrder[i] = client.id
-                                color = i === 0 ? 'white' : 'black'
-                                console.log(`Replaced old socket.id at position ${i} with ${client.id}, color: ${color}`)
-                                if (room.playerColors[oldSocketId]) {
-                                    room.playerColors[client.id] = room.playerColors[oldSocketId]
-                                    delete room.playerColors[oldSocketId]
+                    } else if (room.originalPlayerOrder.length >= 2) {
+                        if (!room.originalPlayerOrder.includes(client.id)) {
+                            let replaced = false
+                            for (let i = 0; i < room.originalPlayerOrder.length; i++) {
+                                const oldSocketId = room.originalPlayerOrder[i]
+                                if (!room.players.includes(oldSocketId) && oldSocketId !== client.id) {
+                                    console.log("MAIL ",room.originalPlayerOrder[i],client.id,room.originalPlayerOrder)
+                                    room.originalPlayerOrder[i] = client.id
+                                    color = i === 0 ? 'white' : 'black'
+                                    console.log(`Replaced old socket.id at position ${i} with ${client.id}, color: ${color}`)
+                                    if (room.playerColors[oldSocketId]) {
+                                        room.playerColors[client.id] = room.playerColors[oldSocketId]
+                                        delete room.playerColors[oldSocketId]
+                                    }
+                                    replaced = true
+                                    break
                                 }
-                                break
                             }
+                            if (!replaced) {
+                                console.log(`Warning: Could not add ${client.id} to originalPlayerOrder - all positions are taken by active players`)
+                            }
+                        } else {
+                            const foundIndex = room.originalPlayerOrder.indexOf(client.id)
+                            color = foundIndex === 0 ? 'white' : 'black'
+                            console.log(`Client ${client.id} already in originalPlayerOrder at position ${foundIndex}, color: ${color}`)
                         }
                     }
                 }
@@ -621,18 +712,34 @@ io.sockets.on('connection', function (client) {
                     role = 'player'
                     if (!room.players.includes(client.id)) {
                         if (!color) {
-                            if (room.originalPlayerOrder.length === 0) {
+                            const existingOriginalIndex = room.originalPlayerOrder.indexOf(client.id)
+                            if (existingOriginalIndex !== -1) {
+                                color = existingOriginalIndex === 0 ? 'white' : 'black'
+                                console.log(`Found existing position ${existingOriginalIndex} for ${client.id} in originalPlayerOrder, color: ${color}`)
+                            } else if (room.originalPlayerOrder.length === 0) {
                                 if (currentPlayersCount === 0) {
                                     color = 'white'
+                                    console.log("PAIL ",client.id,room.originalPlayerOrder)
                                     room.originalPlayerOrder.push(client.id)
                                 } else if (currentPlayersCount === 1) {
                                     color = 'black'
+                                    console.log("PAIL ",client.id,room.originalPlayerOrder)
                                     room.originalPlayerOrder.push(client.id)
                                 }
-                            } else {
+                            } else if (room.originalPlayerOrder.length < 2 && !room.originalPlayerOrder.includes(client.id)) {
                                 const originalIndex = room.originalPlayerOrder.length
                                 color = originalIndex === 0 ? 'white' : 'black'
+                                console.log("PAIL ",client.id,room.originalPlayerOrder)
                                 room.originalPlayerOrder.push(client.id)
+                            } else {
+                                if (room.originalPlayerOrder.includes(client.id)) {
+                                    const foundIndex = room.originalPlayerOrder.indexOf(client.id)
+                                    color = foundIndex === 0 ? 'white' : 'black'
+                                    console.log(`Client ${client.id} already in originalPlayerOrder at position ${foundIndex}, color: ${color}`)
+                                } else {
+                                    color = currentPlayersCount === 0 ? 'white' : 'black'
+                                    console.log("PAIL - not adding to originalPlayerOrder (already full):", client.id, room.originalPlayerOrder)
+                                }
                             }
                         }
                         room.players.push(client.id)
@@ -717,9 +824,16 @@ io.sockets.on('connection', function (client) {
                             color = playerIndex === 0 ? 'white' : 'black'
                             if (!room.originalPlayerOrder.includes(client.id)) {
                                 if (room.originalPlayerOrder.length < 2) {
+                                    console.log("PAIL ",client.id,room.originalPlayerOrder)
                                     room.originalPlayerOrder.push(client.id)
                                 } else {
-                                    room.originalPlayerOrder[playerIndex] = client.id
+                                    const oldSocketId = room.originalPlayerOrder[playerIndex]
+                                    if (oldSocketId && !room.players.includes(oldSocketId)) {
+                                        console.log("MAIL ",room.originalPlayerOrder[playerIndex],client.id,room.originalPlayerOrder)
+                                        room.originalPlayerOrder[playerIndex] = client.id
+                                    } else {
+                                        console.log(`Warning: Cannot replace at position ${playerIndex} - position is occupied by active player`)
+                                    }
                                 }
                             }
                             console.log(`FINAL: Assigned color ${color} to player ${client.id} based on current position ${playerIndex}`)
@@ -752,13 +866,65 @@ io.sockets.on('connection', function (client) {
                         }
                     } else {
                         const playerIndex = room.players.indexOf(client.id)
-                        if (playerIndex !== -1 && room.originalPlayerOrder.length < 2) {
-                            room.originalPlayerOrder[playerIndex] = client.id
-                            console.log(`Added ${client.id} to originalPlayerOrder at position ${playerIndex}`)
+                        if (playerIndex !== -1 && !room.originalPlayerOrder.includes(client.id)) {
+                            if (room.originalPlayerOrder.length < 2) {
+                                if (playerIndex < room.originalPlayerOrder.length) {
+                                    const oldSocketId = room.originalPlayerOrder[playerIndex]
+                                    if (oldSocketId && !room.players.includes(oldSocketId)) {
+                                        console.log("MAIL ",room.originalPlayerOrder[playerIndex],client.id,room.originalPlayerOrder)
+                                        room.originalPlayerOrder[playerIndex] = client.id
+                                        console.log(`Replaced ${oldSocketId} with ${client.id} at position ${playerIndex} in originalPlayerOrder`)
+                                    } else {
+                                        room.originalPlayerOrder.push(client.id)
+                                        console.log(`Added ${client.id} to originalPlayerOrder at end (position ${room.originalPlayerOrder.length - 1})`)
+                                    }
+                                } else {
+                                    room.originalPlayerOrder.push(client.id)
+                                    console.log(`Added ${client.id} to originalPlayerOrder at position ${room.originalPlayerOrder.length - 1}`)
+                                }
+                            } else {
+                                if (playerIndex < room.originalPlayerOrder.length) {
+                                    const oldSocketId = room.originalPlayerOrder[playerIndex]
+                                    if (oldSocketId && !room.players.includes(oldSocketId)) {
+                                        console.log("MAIL ",room.originalPlayerOrder[playerIndex],client.id,room.originalPlayerOrder)
+                                        room.originalPlayerOrder[playerIndex] = client.id
+                                        console.log(`Replaced ${oldSocketId} with ${client.id} at position ${playerIndex} in originalPlayerOrder`)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
+
+            const finalUniqueOrder = []
+            const finalSeenIds = new Set()
+            for (const id of room.originalPlayerOrder) {
+                if (!finalSeenIds.has(id) && id) {
+                    finalUniqueOrder.push(id)
+                    finalSeenIds.add(id)
+                }
+            }
+            room.originalPlayerOrder = finalUniqueOrder
+            
+            if (role === 'player' && color) {
+                const finalOriginalIndex = room.originalPlayerOrder.indexOf(client.id)
+                if (finalOriginalIndex !== -1) {
+                    const expectedColor = finalOriginalIndex === 0 ? 'white' : 'black'
+                    if (color !== expectedColor) {
+                        console.warn(`FINAL FIX: Color mismatch for ${client.id}: has ${color}, should be ${expectedColor} (original position ${finalOriginalIndex})`)
+                        color = expectedColor
+                        setClientColor(client.id, color)
+                        if (!room.playerColors) {
+                            room.playerColors = {}
+                        }
+                        room.playerColors[client.id] = color
+                    }
+                }
+            }
+            
+            console.log(`FINAL STATE: originalPlayerOrder:`, room.originalPlayerOrder)
+            console.log(`FINAL STATE: playerColors:`, room.playerColors)
 
             client.emit('room-rejoined', { 
                 roomId: roomId,
@@ -879,6 +1045,53 @@ io.sockets.on('connection', function (client) {
     // }
 
 
+    function checkEvasion(opponentAbilities){
+        return opponentAbilities.evasion > 0 && Math.random() * 100 < opponentAbilities.evasion
+    }
+
+    function checkDefPiece(finalDamage,opponentAbilities){
+        if (opponentAbilities.defPiece && abilitiesPieces[opponentPiece]?.self?.["def-piece"]) {
+            const defAbility = abilitiesPieces[opponentPiece].self["def-piece"]
+            finalDamage = Math.floor(finalDamage * (1 - defAbility.dmg_def / 100))
+            opponentAbilities.defPiece = false 
+        }
+        return finalDamage
+    }
+
+    function checkSpikes(room,opponentAbilities){
+        if (opponentAbilities.spikes > 0) {
+            const reflectedDamage = Math.floor(finalDamage * (opponentAbilities.spikes / 100))
+            if (playerColor === 'white') {
+                room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - reflectedDamage)
+            } else {
+                room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - reflectedDamage)
+            }
+        }
+    }
+
+    function checkDamage(room,opponentColor,finalDamage){
+        if (opponentColor === 'white') {
+            room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - finalDamage)
+        } else {
+            room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - finalDamage)
+        }
+    }
+
+    function checkContreAttack(room,opponentAbilities,damage,playerColor){
+        if (opponentAbilities.contrAttack > 0 && Math.random() * 100 < opponentAbilities.contrAttack) {
+            const counterDamage = Math.floor(damage * (opponentAbilities.contrAttackCoef / 100))
+            if (playerColor === 'white') {
+                room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - counterDamage)
+            } else {
+                room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - counterDamage)
+            }
+            opponentAbilities.contrAttack = 0 
+            opponentAbilities.contrAttackCoef = 0
+        }
+    }
+
+
+
 
     client.on("evasion-send", function(data){
         const roomId = clientToRoom.get(client.id)
@@ -915,67 +1128,30 @@ io.sockets.on('connection', function (client) {
         const playerColor = room.playerColors[client.id]
         const opponentColor = playerColor === 'white' ? 'black' : 'white'
         
-        const piece = playerColor === 'white' 
-            ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
-            : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+        const piece = playerColor === 'white' ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase(): room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
 
         if (abilitiesPieces[piece]?.opponent?.["pawn-shoot"]) {
             const ability = abilitiesPieces[piece].opponent["pawn-shoot"]
             let damage = ability.damage
 
-            // Check evasion
             const opponentAbilities = opponentColor === 'white' ? room.gameInfo.turnBasedInfo.abilities.pieceW : room.gameInfo.turnBasedInfo.abilities.pieceB
 
             let finalDamage = damage
 
-            if (opponentAbilities.evasion > 0 && Math.random() * 100 < opponentAbilities.evasion) {
-                finalDamage = 0 // Evaded
+            if (checkEvasion(opponentAbilities)) {
+                finalDamage = 0 
             } else {
-                // def-piece
                 const opponentPiece = opponentColor === 'white' ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase() : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
-                
-                if (opponentAbilities.defPiece && abilitiesPieces[opponentPiece]?.self?.["def-piece"]) {
-                    const defAbility = abilitiesPieces[opponentPiece].self["def-piece"]
-                    finalDamage = Math.floor(finalDamage * (1 - defAbility.dmg_def / 100))
-                    opponentAbilities.defPiece = false // Consume after use
-                }
-
-                // spikes 
-                if (opponentAbilities.spikes > 0) {
-                    const reflectedDamage = Math.floor(finalDamage * (opponentAbilities.spikes / 100))
-                    if (playerColor === 'white') {
-                        room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - reflectedDamage)
-                    } else {
-                        room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - reflectedDamage)
-                    }
-                }
-
-                // damage
-                if (opponentColor === 'white') {
-                    room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - finalDamage)
-                } else {
-                    room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - finalDamage)
-                }
-
-                // conter-attack
-                if (opponentAbilities.contrAttack > 0 && Math.random() * 100 < opponentAbilities.contrAttack) {
-                    const counterDamage = Math.floor(damage * (opponentAbilities.contrAttackCoef / 100))
-                    if (playerColor === 'white') {
-                        room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - counterDamage)
-                    } else {
-                        room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - counterDamage)
-                    }
-                    opponentAbilities.contrAttack = 0 
-                    opponentAbilities.contrAttackCoef = 0
-                }
+                checkDefPiece(finalDamage,opponentAbilities)
+                checkSpikes(room,opponentAbilities)
+                checkDamage(room,opponentColor,finalDamage)
+                checkContreAttack(room,opponentAbilities,damage,playerColor)
             }
             
             opponentAbilities.evasion = 0
-
-            room.gameInfo.turnBasedInfo.currentTurn = opponentColor
         }
 
-
+        room.gameInfo.turnBasedInfo.currentTurn = opponentColor
 
         const datas = {
             info:room.gameInfo,
@@ -985,27 +1161,23 @@ io.sockets.on('connection', function (client) {
         io.to(roomId).emit('turn-based-update', datas)
     })
 
-
-
     client.on("contre-attack-send", function(data){
         const roomId = clientToRoom.get(client.id)
         const room = rooms.get(roomId)
         if (!room || room.gameInfo.gameStatus !== "turnBased") return
 
         const playerColor = room.playerColors[client.id]
-        const abilities = playerColor === 'white' 
-            ? room.gameInfo.turnBasedInfo.abilities.pieceW 
-            : room.gameInfo.turnBasedInfo.abilities.pieceB
+        const abilities = playerColor === 'white' ? room.gameInfo.turnBasedInfo.abilities.pieceW : room.gameInfo.turnBasedInfo.abilities.pieceB
 
-        const piece = playerColor === 'white' 
-            ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
-            : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+        const piece = playerColor === 'white' ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase(): room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
 
         if (abilitiesPieces[piece]?.self?.["contre-attack"]) {
             const ability = abilitiesPieces[piece].self["contre-attack"]
             abilities.contrAttack = ability.chance
             abilities.contrAttackCoef = ability.coef
         }
+
+        room.gameInfo.turnBasedInfo.currentTurn = playerColor === 'white' ? 'black' : 'white'
 
         const datas = {
             info:room.gameInfo,
@@ -1023,31 +1195,24 @@ io.sockets.on('connection', function (client) {
         const playerColor = room.playerColors[client.id]
         const opponentColor = playerColor === 'white' ? 'black' : 'white'
         
-        const piece = playerColor === 'white' 
-            ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
-            : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+        const piece = playerColor === 'white' ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase(): room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
 
         if (abilitiesPieces[piece]?.opponent?.["bishop-shoot"]) {
             const ability = abilitiesPieces[piece].opponent["bishop-shoot"]
             let damage = ability.damage
             
-            // Bishop-shoot ignores shields/evasions, applies coef% damage after shield
             if (ability.coef) {
                 damage = Math.floor(damage * (ability.coef / 100))
             }
 
-            const opponentAbilities = opponentColor === 'white' 
-                ? room.gameInfo.turnBasedInfo.abilities.pieceW 
-                : room.gameInfo.turnBasedInfo.abilities.pieceB
+            const opponentAbilities = opponentColor === 'white' ? room.gameInfo.turnBasedInfo.abilities.pieceW : room.gameInfo.turnBasedInfo.abilities.pieceB
 
-            // Apply damage (ignores evasion and def-piece per README)
             if (opponentColor === 'white') {
                 room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - damage)
             } else {
                 room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - damage)
             }
 
-            // Still check counter-attack (bishop-shoot doesn't ignore counter-attack)
             if (opponentAbilities.contrAttack > 0 && Math.random() * 100 < opponentAbilities.contrAttack) {
                 const counterDamage = Math.floor(damage * (opponentAbilities.contrAttackCoef / 100))
                 if (playerColor === 'white') {
@@ -1059,10 +1224,8 @@ io.sockets.on('connection', function (client) {
                 opponentAbilities.contrAttackCoef = 0
             }
 
-            // Reset evasion
             opponentAbilities.evasion = 0
 
-            // Switch turn
             room.gameInfo.turnBasedInfo.currentTurn = opponentColor
         }
 
@@ -1080,9 +1243,7 @@ io.sockets.on('connection', function (client) {
         if (!room || room.gameInfo.gameStatus !== "turnBased") return
 
         const playerColor = room.playerColors[client.id]
-        const piece = playerColor === 'white' 
-            ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
-            : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+        const piece = playerColor === 'white' ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase(): room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
 
         if (abilitiesPieces[piece]?.self?.["healing"]) {
             const ability = abilitiesPieces[piece].self["healing"]
@@ -1093,10 +1254,9 @@ io.sockets.on('connection', function (client) {
             } else {
                 room.gameInfo.turnBasedInfo.hpB = Math.min(maxHp, room.gameInfo.turnBasedInfo.hpB + ability.heal)
             }
-
-            // Switch turn
-            room.gameInfo.turnBasedInfo.currentTurn = playerColor === 'white' ? 'black' : 'white'
         }
+
+        room.gameInfo.turnBasedInfo.currentTurn = playerColor === 'white' ? 'black' : 'white'
 
         const datas = {
             info:room.gameInfo,
@@ -1114,81 +1274,37 @@ io.sockets.on('connection', function (client) {
         const playerColor = room.playerColors[client.id]
         const opponentColor = playerColor === 'white' ? 'black' : 'white'
         
-        const piece = playerColor === 'white' 
-            ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
-            : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+        const piece = playerColor === 'white' ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase(): room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
 
         if (abilitiesPieces[piece]?.opponent?.["heavy-shoot"]) {
             const ability = abilitiesPieces[piece].opponent["heavy-shoot"]
             let damage = ability.damage
             
-            // 30% chance for 70 damage instead of 50
             if (ability.coef && Math.random() * 100 < ability.coef) {
                 damage = ability.dmg_coef
             }
 
-            // Check evasion
-            const opponentAbilities = opponentColor === 'white' 
-                ? room.gameInfo.turnBasedInfo.abilities.pieceW 
-                : room.gameInfo.turnBasedInfo.abilities.pieceB
+            const opponentAbilities = opponentColor === 'white' ? room.gameInfo.turnBasedInfo.abilities.pieceW : room.gameInfo.turnBasedInfo.abilities.pieceB
 
             let finalDamage = damage
-            if (opponentAbilities.evasion > 0 && Math.random() * 100 < opponentAbilities.evasion) {
-                finalDamage = 0 // Evaded
+            if (checkEvasion(opponentAbilities)) {
+                finalDamage = 0 
             } else {
-                // Check def-piece (60% reduction)
-                const opponentPiece = opponentColor === 'white' 
-                    ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
-                    : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
-                
-                if (opponentAbilities.defPiece && abilitiesPieces[opponentPiece]?.self?.["def-piece"]) {
-                    const defAbility = abilitiesPieces[opponentPiece].self["def-piece"]
-                    finalDamage = Math.floor(finalDamage * (1 - defAbility.dmg_def / 100))
-                    opponentAbilities.defPiece = false // Consume after use
-                }
+                const opponentPiece = opponentColor === 'white' ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase(): room.gameInfo.turnBasedInfo.pieceB.toLowerCase() 
 
-                // Apply spikes reflection (45% of damage)
-                if (opponentAbilities.spikes > 0) {
-                    const reflectedDamage = Math.floor(finalDamage * (opponentAbilities.spikes / 100))
-                    if (playerColor === 'white') {
-                        room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - reflectedDamage)
-                    } else {
-                        room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - reflectedDamage)
-                    }
-                }
-
-                // Apply damage
-                if (opponentColor === 'white') {
-                    room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - finalDamage)
-                } else {
-                    room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - finalDamage)
-                }
-
-                // Check counter-attack
-                if (opponentAbilities.contrAttack > 0 && Math.random() * 100 < opponentAbilities.contrAttack) {
-                    const counterDamage = Math.floor(damage * (opponentAbilities.contrAttackCoef / 100))
-                    if (playerColor === 'white') {
-                        room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - counterDamage)
-                    } else {
-                        room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - counterDamage)
-                    }
-                    opponentAbilities.contrAttack = 0
-                    opponentAbilities.contrAttackCoef = 0
-                }
+                checkDefPiece(finalDamage,opponentAbilities)
+                checkSpikes(room,opponentAbilities)
+                checkDamage(room,opponentColor,finalDamage)
+                checkContreAttack(room,opponentAbilities,damage,playerColor)
             }
             
-            // Reset evasion
             opponentAbilities.evasion = 0
 
-            // Skip next turn
-            const playerAbilities = playerColor === 'white' 
-                ? room.gameInfo.turnBasedInfo.abilities.pieceW 
-                : room.gameInfo.turnBasedInfo.abilities.pieceB
+            const playerAbilities = playerColor === 'white' ? room.gameInfo.turnBasedInfo.abilities.pieceW : room.gameInfo.turnBasedInfo.abilities.pieceB
             playerAbilities.skipTurn = true
-
-            // Switch turn
-            room.gameInfo.turnBasedInfo.currentTurn = opponentColor
         }
+
+        room.gameInfo.turnBasedInfo.currentTurn = opponentColor
 
         const datas = {
             info:room.gameInfo,
@@ -1214,62 +1330,24 @@ io.sockets.on('connection', function (client) {
             const ability = abilitiesPieces[piece].opponent["rook-shoot"]
             let damage = ability.damage
 
-            // Check evasion
-            const opponentAbilities = opponentColor === 'white' 
-                ? room.gameInfo.turnBasedInfo.abilities.pieceW 
-                : room.gameInfo.turnBasedInfo.abilities.pieceB
+            const opponentAbilities = opponentColor === 'white' ? room.gameInfo.turnBasedInfo.abilities.pieceW : room.gameInfo.turnBasedInfo.abilities.pieceB
 
             let finalDamage = damage
-            if (opponentAbilities.evasion > 0 && Math.random() * 100 < opponentAbilities.evasion) {
-                finalDamage = 0 // Evaded
+            if (checkEvasion(opponentAbilities)) {
+                finalDamage = 0 
             } else {
-                // Check def-piece (60% reduction)
-                const opponentPiece = opponentColor === 'white' 
-                    ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
-                    : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
-                
-                if (opponentAbilities.defPiece && abilitiesPieces[opponentPiece]?.self?.["def-piece"]) {
-                    const defAbility = abilitiesPieces[opponentPiece].self["def-piece"]
-                    finalDamage = Math.floor(finalDamage * (1 - defAbility.dmg_def / 100))
-                    opponentAbilities.defPiece = false // Consume after use
-                }
-
-                // Apply spikes reflection
-                if (opponentAbilities.spikes > 0) {
-                    const reflectedDamage = Math.floor(finalDamage * (opponentAbilities.spikes / 100))
-                    if (playerColor === 'white') {
-                        room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - reflectedDamage)
-                    } else {
-                        room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - reflectedDamage)
-                    }
-                }
-
-                // Apply damage
-                if (opponentColor === 'white') {
-                    room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - finalDamage)
-                } else {
-                    room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - finalDamage)
-                }
-
-                // Check counter-attack
-                if (opponentAbilities.contrAttack > 0 && Math.random() * 100 < opponentAbilities.contrAttack) {
-                    const counterDamage = Math.floor(damage * (opponentAbilities.contrAttackCoef / 100))
-                    if (playerColor === 'white') {
-                        room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - counterDamage)
-                    } else {
-                        room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - counterDamage)
-                    }
-                    opponentAbilities.contrAttack = 0
-                    opponentAbilities.contrAttackCoef = 0
-                }
+                const opponentPiece = opponentColor === 'white' ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase(): room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+    
+                checkDefPiece(finalDamage,opponentAbilities)
+                checkSpikes(room,opponentAbilities)
+                checkDamage(room,opponentColor,finalDamage)
+                checkContreAttack(room,opponentAbilities,damage,playerColor)
             }
             
-            // Reset evasion
             opponentAbilities.evasion = 0
-
-            // Switch turn
-            room.gameInfo.turnBasedInfo.currentTurn = opponentColor
         }
+
+        room.gameInfo.turnBasedInfo.currentTurn = opponentColor
 
         const datas = {
             info:room.gameInfo,
@@ -1285,22 +1363,16 @@ io.sockets.on('connection', function (client) {
         if (!room || room.gameInfo.gameStatus !== "turnBased") return
 
         const playerColor = room.playerColors[client.id]
-        const abilities = playerColor === 'white' 
-            ? room.gameInfo.turnBasedInfo.abilities.pieceW 
-            : room.gameInfo.turnBasedInfo.abilities.pieceB
+        const abilities = playerColor === 'white' ? room.gameInfo.turnBasedInfo.abilities.pieceW : room.gameInfo.turnBasedInfo.abilities.pieceB
 
-        const piece = playerColor === 'white' 
-            ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
-            : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+        const piece = playerColor === 'white' ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase(): room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
 
         if (abilitiesPieces[piece]?.self?.["stacking"]) {
             const ability = abilitiesPieces[piece].self["stacking"]
-            // Increase stacks, max 5
             if (abilities.stacks < ability.max_stacks) {
                 abilities.stacks++
             }
 
-            // Switch turn
             room.gameInfo.turnBasedInfo.currentTurn = playerColor === 'white' ? 'black' : 'white'
         }
 
@@ -1320,78 +1392,35 @@ io.sockets.on('connection', function (client) {
         const playerColor = room.playerColors[client.id]
         const opponentColor = playerColor === 'white' ? 'black' : 'white'
         
-        const piece = playerColor === 'white' 
-            ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
-            : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+        const piece = playerColor === 'white' ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase(): room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
 
         if (abilitiesPieces[piece]?.opponent?.["kamicadze"]) {
             const ability = abilitiesPieces[piece].opponent["kamicadze"]
             let damage = ability.damage
 
-            // Multiply by stacks if Knight
-            const playerAbilities = playerColor === 'white' 
-                ? room.gameInfo.turnBasedInfo.abilities.pieceW 
-                : room.gameInfo.turnBasedInfo.abilities.pieceB
+            const playerAbilities = playerColor === 'white' ? room.gameInfo.turnBasedInfo.abilities.pieceW : room.gameInfo.turnBasedInfo.abilities.pieceB
             
             if (abilitiesPieces[piece]?.self?.["stacking"] && playerAbilities.stacks > 1) {
                 damage = damage * playerAbilities.stacks
-                playerAbilities.stacks = 1 // Reset stacks after use
+                playerAbilities.stacks = 1
             }
 
-            // Check evasion
-            const opponentAbilities = opponentColor === 'white' 
-                ? room.gameInfo.turnBasedInfo.abilities.pieceW 
-                : room.gameInfo.turnBasedInfo.abilities.pieceB
+            const opponentAbilities = opponentColor === 'white' ? room.gameInfo.turnBasedInfo.abilities.pieceW : room.gameInfo.turnBasedInfo.abilities.pieceB
 
             let finalDamage = damage
-            if (opponentAbilities.evasion > 0 && Math.random() * 100 < opponentAbilities.evasion) {
-                finalDamage = 0 // Evaded
+            if (checkEvasion(opponentAbilities)) {
+                finalDamage = 0 
             } else {
-                // Check def-piece
-                const opponentPiece = opponentColor === 'white' 
-                    ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
-                    : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+                const opponentPiece = opponentColor === 'white' ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase(): room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
                 
-                if (opponentAbilities.defPiece && abilitiesPieces[opponentPiece]?.self?.["def-piece"]) {
-                    const defAbility = abilitiesPieces[opponentPiece].self["def-piece"]
-                    finalDamage = Math.floor(finalDamage * (1 - defAbility.dmg_def / 100))
-                    opponentAbilities.defPiece = false // Consume after use
-                }
-
-                // Apply spikes reflection
-                if (opponentAbilities.spikes > 0) {
-                    const reflectedDamage = Math.floor(finalDamage * (opponentAbilities.spikes / 100))
-                    if (playerColor === 'white') {
-                        room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - reflectedDamage)
-                    } else {
-                        room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - reflectedDamage)
-                    }
-                }
-
-                // Apply damage to opponent
-                if (opponentColor === 'white') {
-                    room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - finalDamage)
-                } else {
-                    room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - finalDamage)
-                }
-
-                // Check counter-attack
-                if (opponentAbilities.contrAttack > 0 && Math.random() * 100 < opponentAbilities.contrAttack) {
-                    const counterDamage = Math.floor(damage * (opponentAbilities.contrAttackCoef / 100))
-                    if (playerColor === 'white') {
-                        room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - counterDamage)
-                    } else {
-                        room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - counterDamage)
-                    }
-                    opponentAbilities.contrAttack = 0
-                    opponentAbilities.contrAttackCoef = 0
-                }
+                checkDefPiece(finalDamage,opponentAbilities)
+                checkSpikes(room,opponentAbilities)
+                checkDamage(room,opponentColor,finalDamage)
+                checkContreAttack(room,opponentAbilities,damage,playerColor)
             }
-            
-            // Reset evasion
+
             opponentAbilities.evasion = 0
 
-            // Self damage (always applies, not evaded)
             const selfDamage = ability.dmg_self
             if (playerColor === 'white') {
                 room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - selfDamage)
@@ -1399,8 +1428,6 @@ io.sockets.on('connection', function (client) {
                 room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - selfDamage)
             }
 
-            // Switch turn
-            console.log("SWItch turn ",opponentColor)
             room.gameInfo.turnBasedInfo.currentTurn = opponentColor
         }
 
@@ -1418,20 +1445,12 @@ io.sockets.on('connection', function (client) {
         if (!room || room.gameInfo.gameStatus !== "turnBased") return
 
         const playerColor = room.playerColors[client.id]
-        const abilities = playerColor === 'white' 
-            ? room.gameInfo.turnBasedInfo.abilities.pieceW 
-            : room.gameInfo.turnBasedInfo.abilities.pieceB
+        const abilities = playerColor === 'white' ? room.gameInfo.turnBasedInfo.abilities.pieceW : room.gameInfo.turnBasedInfo.abilities.pieceB
 
-        const piece = playerColor === 'white' 
-            ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
-            : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+        const piece = playerColor === 'white' ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase(): room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
 
         if (abilitiesPieces[piece]?.self?.["def-piece"]) {
-            // Activate def-piece (60% damage reduction on next attack)
-            // Can be used every other turn (handled by client or add cooldown logic)
             abilities.defPiece = true
-
-            // Switch turn
             room.gameInfo.turnBasedInfo.currentTurn = playerColor === 'white' ? 'black' : 'white'
         }
 
@@ -1451,17 +1470,12 @@ io.sockets.on('connection', function (client) {
         const playerColor = room.playerColors[client.id]
         const opponentColor = playerColor === 'white' ? 'black' : 'white'
         
-        const piece = playerColor === 'white' 
-            ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
-            : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+        const piece = playerColor === 'white' ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase(): room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
 
-        // Note: King abilities are under "k" key (line 111), but there's a conflict with Knight "k" (line 76)
-        // Assuming the second "k" entry is King
         const kingAbilities = abilitiesPieces["k"]?.self
         if (piece === "k" && kingAbilities?.["vampiring"]) {
             const ability = kingAbilities["vampiring"]
-            
-            // Heal self
+
             const maxHp = hpCount[piece]
             if (playerColor === 'white') {
                 room.gameInfo.turnBasedInfo.hpW = Math.min(maxHp, room.gameInfo.turnBasedInfo.hpW + ability.heal)
@@ -1469,14 +1483,12 @@ io.sockets.on('connection', function (client) {
                 room.gameInfo.turnBasedInfo.hpB = Math.min(maxHp, room.gameInfo.turnBasedInfo.hpB + ability.heal)
             }
 
-            // Damage opponent (ignores evasion/shields per README)
             if (opponentColor === 'white') {
                 room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - ability.damage)
             } else {
                 room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - ability.damage)
             }
 
-            // Switch turn
             room.gameInfo.turnBasedInfo.currentTurn = opponentColor
         }
 
@@ -1494,22 +1506,14 @@ io.sockets.on('connection', function (client) {
         if (!room || room.gameInfo.gameStatus !== "turnBased") return
 
         const playerColor = room.playerColors[client.id]
-        const abilities = playerColor === 'white' 
-            ? room.gameInfo.turnBasedInfo.abilities.pieceW 
-            : room.gameInfo.turnBasedInfo.abilities.pieceB
+        const abilities = playerColor === 'white' ? room.gameInfo.turnBasedInfo.abilities.pieceW : room.gameInfo.turnBasedInfo.abilities.pieceB
 
-        const piece = playerColor === 'white' 
-            ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
-            : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+        const piece = playerColor === 'white' ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase(): room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
 
-        // Note: King abilities are under "k" key
         const kingAbilities = abilitiesPieces["k"]?.self
         if (piece === "k" && kingAbilities?.["spikes"]) {
             const ability = kingAbilities["spikes"]
-            // Set spikes shield (45% damage reflection)
             abilities.spikes = ability.coef
-
-            // Switch turn
             room.gameInfo.turnBasedInfo.currentTurn = playerColor === 'white' ? 'black' : 'white'
         }
 
@@ -1529,33 +1533,24 @@ io.sockets.on('connection', function (client) {
         const playerColor = room.playerColors[client.id]
         const opponentColor = playerColor === 'white' ? 'black' : 'white'
         
-        const piece = playerColor === 'white' 
-            ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
-            : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+        const piece = playerColor === 'white' ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase(): room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
 
-        // Note: King abilities are under "k" key
         const kingAbilities = abilitiesPieces["k"]?.self
         if (piece === "k" && kingAbilities?.["prayers"]) {
             const ability = kingAbilities["prayers"]
             
-            const opponentHp = opponentColor === 'white' 
-                ? room.gameInfo.turnBasedInfo.hpW 
-                : room.gameInfo.turnBasedInfo.hpB
-            const opponentMaxHp = opponentColor === 'white' 
-                ? hpCount[room.gameInfo.turnBasedInfo.pieceW.toLowerCase()]
-                : hpCount[room.gameInfo.turnBasedInfo.pieceB.toLowerCase()]
+            const opponentHp = opponentColor === 'white' ? room.gameInfo.turnBasedInfo.hpW : room.gameInfo.turnBasedInfo.hpB
+            const opponentMaxHp = opponentColor === 'white' ? hpCount[room.gameInfo.turnBasedInfo.pieceW.toLowerCase()]: hpCount[room.gameInfo.turnBasedInfo.pieceB.toLowerCase()]
             
             const opponentHpPercent = (opponentHp / opponentMaxHp) * 100
 
             if (opponentHpPercent < 15) {
-                // Kill opponent
                 if (opponentColor === 'white') {
                     room.gameInfo.turnBasedInfo.hpW = 0
                 } else {
                     room.gameInfo.turnBasedInfo.hpB = 0
                 }
             } else {
-                // Take 40 damage
                 if (playerColor === 'white') {
                     room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - ability.damage)
                 } else {
@@ -1563,7 +1558,6 @@ io.sockets.on('connection', function (client) {
                 }
             }
 
-            // Switch turn
             room.gameInfo.turnBasedInfo.currentTurn = opponentColor
         }
 
@@ -1603,7 +1597,18 @@ io.sockets.on('connection', function (client) {
                 console.log(`Original player order preserved:`, room.originalPlayerOrder)
 
                 io.emit('rooms-list', getAvailableRooms())
-                cleanupRoom(roomId)
+                
+                // Не викликаємо cleanupRoom одразу, якщо є гравці в originalPlayerOrder
+                // Вони можуть переприєднатися, тому даємо час
+                const originalPlayersCount = room.originalPlayerOrder ? room.originalPlayerOrder.filter(id => id).length : 0
+                if (originalPlayersCount === 0) {
+                    // Тільки якщо немає гравців в originalPlayerOrder, викликаємо cleanupRoom
+                    cleanupRoom(roomId)
+                } else {
+                    console.log(`Room ${roomId} cleanup deferred (has ${originalPlayersCount} players in originalPlayerOrder who may rejoin)`)
+                    // Викликаємо cleanupRoom з затримкою, щоб дати час на переприєднання
+                    setTimeout(() => cleanupRoom(roomId), 1000)
+                }
             }
         }
     })

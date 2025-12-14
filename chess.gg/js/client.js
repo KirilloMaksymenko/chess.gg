@@ -188,7 +188,7 @@ function init() {
 
     setInterval(() => {
         socket.emit('get-rooms')
-    }, 100)
+    }, 1000)
 }
 
 if (document.readyState === 'loading') {

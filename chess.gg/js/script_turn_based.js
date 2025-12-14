@@ -87,6 +87,7 @@ const handUpW = new Image()
 const handPushW = new Image ()
 const smashW = new Image ()
 const smashB = new Image ()
+const bookRead = [new Image (),new Image (),new Image ()]
 
 
 
@@ -235,7 +236,22 @@ function preloadImages() {
         smashW.onload = resolve;
         smashW.onerror = resolve;
     }));
-    
+
+    bookRead[0].src = "/Source/TurnBased/book_read_1.png";
+    imagePromises.push(new Promise((resolve) => {
+        bookRead[0].onload = resolve;
+        bookRead[0].onerror = resolve;
+    }));
+    bookRead[1].src = "/Source/TurnBased/book_read_2.png";
+    imagePromises.push(new Promise((resolve) => {
+        bookRead[1].onload = resolve;
+        bookRead[1].onerror = resolve;
+    }));
+    bookRead[2].src = "/Source/TurnBased/book_read_3.png";
+    imagePromises.push(new Promise((resolve) => {
+        bookRead[2].onload = resolve;
+        bookRead[2].onerror = resolve;
+    }));
     
     
     Promise.all(imagePromises).then(() => {
@@ -300,41 +316,25 @@ function draw(){
         ctxTurn.drawImage(bgTurnBased, 0, 0);
         ctxTurn.drawImage(battleGround, 15, 325);
 
+        ctxTurn.save()
+        ctxTurn.font = '24px "Rock Salt", serif ';
+        ctxTurn.fillText("Turn: "+(yourColor === currentBasedTurn ? "your" : currentBasedTurn), canvasTurn.width/2-100, 100)
+        ctxTurn.restore()
+
         ctxTurn.drawImage(colone, 100, 550);
         ctxTurn.drawImage(cloudColone, 100, 750);
 
         ctxTurn.drawImage(colone, 650, 300);
         ctxTurn.drawImage(cloudColone, 620, 500);
 
-        
         ctxTurn.save();
         ctxTurn.scale(-1, 1)
         ctxTurn.drawImage(ImgObj[pieceUse], -168-60, 460, 60, 125);
         ctxTurn.restore();
         
-        //ctxTurn.drawImage(handUpB, 100, 500, 100, 80);
-        //ctxTurn.drawImage(handPushB, 190, 490, 100, 60);
-        //ctxTurn.drawImage(smashW, 120, 490, 150, 90); 
-        
-
         ctxTurn.save();
         ctxTurn.drawImage(ImgObj[pieceOpponent], 718, 210, 60, 125);
         ctxTurn.restore();  
-
-        // ctxTurn.save();
-        // ctxTurn.scale(-1, 1)
-        // ctxTurn.drawImage(handUpB, -740-100, 250, 100, 80);
-        // ctxTurn.restore();
-
-        // ctxTurn.save();
-        // ctxTurn.scale(-1, 1)
-        // ctxTurn.drawImage(handPushB, -650-100, 240, 100, 60);
-        // ctxTurn.restore();
-
-        // ctxTurn.save();
-        // ctxTurn.scale(-1, 1)
-        // ctxTurn.drawImage(smashW, -720-100, 240, 150, 90); 
-        // ctxTurn.restore();
 
         ctxTurn.drawImage(bar, 150, 595, 100, 25);
         ctxTurn.drawImage(barHp,0,0,100*(hpUse/hpCount[pieceUse.toLowerCase()]),25, 150, 595, 105*(hpUse/hpCount[pieceUse.toLowerCase()]), 25);
@@ -372,6 +372,63 @@ function draw(){
     }
 
 }
+
+
+async function animSpell(isOpponent,turn){
+
+
+    if(gameStatus == "turnBased"){
+        if(!isOpponent){
+            
+                console.log("ANIM")
+                for (let i = 0; i < 4; i++) {
+                    draw()
+                    ctxTurn.drawImage(bookRead[0], 170, 520, 85, 50);
+                    await new Promise(r => setTimeout(r, 50));
+
+                    draw()
+                    ctxTurn.drawImage(bookRead[1], 170, 520, 85, 50);
+                    await new Promise(r => setTimeout(r, 50));
+                    
+                    draw()
+                    ctxTurn.drawImage(bookRead[2], 170, 520, 85, 50);
+                    await new Promise(r => setTimeout(r, 50));
+                    draw()   
+                }
+                
+        }else if(isOpponent && turn === yourColor){
+
+            for (let i = 0; i < 4; i++) {
+                draw()
+                ctxTurn.save();
+                ctxTurn.scale(-1, 1)
+                ctxTurn.drawImage(bookRead[0], -670-100, 270, 85, 50);
+                ctxTurn.restore();
+                await new Promise(r => setTimeout(r, 50));
+
+                draw()
+                ctxTurn.save();
+                ctxTurn.scale(-1, 1)
+                ctxTurn.drawImage(bookRead[1], -670-100, 270, 85, 50);
+                ctxTurn.restore();
+                await new Promise(r => setTimeout(r, 50));
+                
+                draw()
+                ctxTurn.save();
+                ctxTurn.scale(-1, 1)
+                ctxTurn.drawImage(bookRead[2], -670-100, 270, 85, 50);
+                ctxTurn.restore();
+                await new Promise(r => setTimeout(r, 50));
+
+                draw()
+            }
+
+        }
+    }
+
+}
+
+
 
 async function animAttack(isOpponent,turn){
 
@@ -544,7 +601,7 @@ function getOpponentSpellCell(x, y) {
     return null;
 }
 
-async function handleTurnBasedClick(e) {
+function handleTurnBasedClick(e) {
     if (gameStatus !== 'turnBased') {
         return;
     }
@@ -573,12 +630,12 @@ async function handleTurnBasedClick(e) {
 
     if (getPlayerSpellCell(scaledX, scaledY) !== null) {
         console.log(abilitiesPieces[pieceUse.toLowerCase()].self[getPlayerSpellCell(scaledX, scaledY)-1])
+        animSpell(false)
         socket.emit(abilitiesPieces[pieceUse.toLowerCase()].self[getPlayerSpellCell(scaledX, scaledY)-1]+"-send",{})
         selectedPieceTurn = null  
     }else if (getOpponentSpellCell(scaledX, scaledY) !== null) {
         console.log(abilitiesPieces[pieceUse.toLowerCase()].opponent[getOpponentSpellCell(scaledX, scaledY)-1])
         animAttack(false)
-        await new Promise(r => setTimeout(r, 1000));
         socket.emit(abilitiesPieces[pieceUse.toLowerCase()].opponent[getOpponentSpellCell(scaledX, scaledY)-1]+"-send",{})
         selectedPieceTurn = null  
         
@@ -1329,7 +1386,9 @@ socket.on("turn-based-update",function(data){
 
     if(data.isAttack){
         animAttack(true, data.info.turnBasedInfo.currentTurn)
-    }
+    }else{
+        animSpell(true,data.info.turnBasedInfo.currentTurn)
+    } 
 
     console.log(data)
 
@@ -1337,8 +1396,6 @@ socket.on("turn-based-update",function(data){
 
     pieceUse = yourColor === 'white' ? data.info.turnBasedInfo.pieceW : data.info.turnBasedInfo.pieceB
     pieceOpponent = yourColor === 'black' ? data.info.turnBasedInfo.pieceW : data.info.turnBasedInfo.pieceB
-    
-    console.log(data)
     
     hpUse =  yourColor === 'white' ? data.info.turnBasedInfo.hpW : data.info.turnBasedInfo.hpB
     hpOpponent =  yourColor === 'black' ? data.info.turnBasedInfo.hpW : data.info.turnBasedInfo.hpB
