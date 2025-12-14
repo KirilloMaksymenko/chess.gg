@@ -29,53 +29,98 @@ const hpCount = {
 const abilitiesPieces = {
     "p":{
         self:{
-            "evasion":null
+            "evasion":{
+                chance:35
+            }
         },
         opponent:{
-            "pawn-shoot":null
+            "pawn-shoot":{
+                damage: 20
+            }
         }
     },
     "s":{
         self:{
-            "contre-attack":null,
-            "evasion":null
+            "contre-attack":{
+                chance: 25,
+                coef: 45
+            },
+            "evasion":{
+                chance: 35
+            }
         },
         opponent:{
-            "bishop-shoot":null
-        } // ignore all shields/evasions, 45% dmg after shield and etc.
+            "bishop-shoot":{ // ignore all shields/evasions, 45% dmg after shield and etc.
+                damage: 30,
+                coef: 45
+            }
+        } 
     },
     "r":{
         self:{
-            "healing":null
+            "healing":{
+                heal: 15
+            }
         },
         opponent:{
-            "heavy-shoot":null,
-            "rook-shoot":null
+            "heavy-shoot":{
+                damage: 50,
+                coef: 30,
+                dmg_coef: 70
+            },
+            "rook-shoot":{
+                damage: 15
+            }
         }
     },
-    "k":{
+    "n":{
         self:{
-            "stacking":null
+            "stacking":{
+                max_stacks: 5
+            }
         },
         opponent:{
-            "kamicadze":null
+            "kamicadze":{
+                damage: 15,
+                dmg_self: 10
+            }
         }
     },
     "q":{
         self:{
-            "def-piece":null
+            "def-piece":{
+                dmg_def: 60
+            }
         },
         opponent:{
-            "heavy-shoot":null,
-            "kamicadze":null,
-            "bishop-shoot":null
+            "heavy-shoot":{
+                damage: 50,
+                coef: 30,
+                dmg_coef: 70
+            },
+            "kamicadze":{
+                damage: 50,
+                dmg_self: 20
+            },
+            "bishop-shoot":{
+                damage: 30,
+                coef: 35
+            }
         }
     },
     "k":{
         self:{
-            "vampiring": null,
-            "spikes": null,
-            "prayers":null,
+            "vampiring": {
+                heal: 20,
+                damage: 20
+            },
+            "spikes": {
+                coef: 45
+            },
+            "prayers":{
+                prc_heal: 25,
+                damage: 40
+            },
         },
         opponent:{}
     }
@@ -299,18 +344,22 @@ io.sockets.on('connection', function (client) {
                             pieceW:{
                                 evasion:0,
                                 contrAttack:0,
+                                contrAttackCoef:0,
                                 skipTurn:false,
                                 stacks:1,
                                 spikes:0,
                                 usePrayers:false,
+                                defPiece:false,
                             },
                             pieceB:{
                                 evasion:0,
                                 contrAttack:0,
+                                contrAttackCoef:0,
                                 skipTurn:false,
                                 stacks:1,
                                 spikes:0,
                                 usePrayers:false,
+                                defPiece:false,
                             }
                         }
                     }
@@ -795,7 +844,12 @@ io.sockets.on('connection', function (client) {
         room.gameInfo.turnBasedInfo.hpB = hpCount[data.pieceB.toLowerCase()]
         room.gameInfo.turnBasedInfo.currentTurn = data.currentTurn
 
-        io.to(roomId).emit('turn-based-update',room.gameInfo)
+        const datas = {
+            info:room.gameInfo,
+            isAttack: false
+        }
+
+        io.to(roomId).emit('turn-based-update',datas)
     })
 
 
@@ -824,58 +878,701 @@ io.sockets.on('connection', function (client) {
     //     opponent:[]
     // }
 
+
+
     client.on("evasion-send", function(data){
+        const roomId = clientToRoom.get(client.id)
+        const room = rooms.get(roomId)
+        if (!room || room.gameInfo.gameStatus !== "turnBased") return
+
+        const playerColor = room.playerColors[client.id]
+        const abilities = playerColor === 'white' ? room.gameInfo.turnBasedInfo.abilities.pieceW : room.gameInfo.turnBasedInfo.abilities.pieceB
+
+        const piece = playerColor === 'white' ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase() : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+
+        if (abilitiesPieces[piece]?.self?.["evasion"]) {
+            const ability = abilitiesPieces[piece].self["evasion"]
+            abilities.evasion = ability.chance
+        }
+        
+        room.gameInfo.turnBasedInfo.currentTurn = playerColor === 'white' ? 'black' : 'white'
+
+        const datas = {
+            info:room.gameInfo,
+            isAttack: false
+        }
+
+        io.to(roomId).emit('turn-based-update', datas)
 
     })
+
     client.on("pawn-shoot-send", function(data){
         
+        const roomId = clientToRoom.get(client.id)
+        const room = rooms.get(roomId)
+        if (!room || room.gameInfo.gameStatus !== "turnBased") return
+
+        const playerColor = room.playerColors[client.id]
+        const opponentColor = playerColor === 'white' ? 'black' : 'white'
+        
+        const piece = playerColor === 'white' 
+            ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
+            : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+
+        if (abilitiesPieces[piece]?.opponent?.["pawn-shoot"]) {
+            const ability = abilitiesPieces[piece].opponent["pawn-shoot"]
+            let damage = ability.damage
+
+            // Check evasion
+            const opponentAbilities = opponentColor === 'white' ? room.gameInfo.turnBasedInfo.abilities.pieceW : room.gameInfo.turnBasedInfo.abilities.pieceB
+
+            let finalDamage = damage
+
+            if (opponentAbilities.evasion > 0 && Math.random() * 100 < opponentAbilities.evasion) {
+                finalDamage = 0 // Evaded
+            } else {
+                // def-piece
+                const opponentPiece = opponentColor === 'white' ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase() : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+                
+                if (opponentAbilities.defPiece && abilitiesPieces[opponentPiece]?.self?.["def-piece"]) {
+                    const defAbility = abilitiesPieces[opponentPiece].self["def-piece"]
+                    finalDamage = Math.floor(finalDamage * (1 - defAbility.dmg_def / 100))
+                    opponentAbilities.defPiece = false // Consume after use
+                }
+
+                // spikes 
+                if (opponentAbilities.spikes > 0) {
+                    const reflectedDamage = Math.floor(finalDamage * (opponentAbilities.spikes / 100))
+                    if (playerColor === 'white') {
+                        room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - reflectedDamage)
+                    } else {
+                        room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - reflectedDamage)
+                    }
+                }
+
+                // damage
+                if (opponentColor === 'white') {
+                    room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - finalDamage)
+                } else {
+                    room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - finalDamage)
+                }
+
+                // conter-attack
+                if (opponentAbilities.contrAttack > 0 && Math.random() * 100 < opponentAbilities.contrAttack) {
+                    const counterDamage = Math.floor(damage * (opponentAbilities.contrAttackCoef / 100))
+                    if (playerColor === 'white') {
+                        room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - counterDamage)
+                    } else {
+                        room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - counterDamage)
+                    }
+                    opponentAbilities.contrAttack = 0 
+                    opponentAbilities.contrAttackCoef = 0
+                }
+            }
+            
+            opponentAbilities.evasion = 0
+
+            room.gameInfo.turnBasedInfo.currentTurn = opponentColor
+        }
+
+
+
+        const datas = {
+            info:room.gameInfo,
+            isAttack: true
+        }
+
+        io.to(roomId).emit('turn-based-update', datas)
     })
 
 
 
     client.on("contre-attack-send", function(data){
-        
+        const roomId = clientToRoom.get(client.id)
+        const room = rooms.get(roomId)
+        if (!room || room.gameInfo.gameStatus !== "turnBased") return
+
+        const playerColor = room.playerColors[client.id]
+        const abilities = playerColor === 'white' 
+            ? room.gameInfo.turnBasedInfo.abilities.pieceW 
+            : room.gameInfo.turnBasedInfo.abilities.pieceB
+
+        const piece = playerColor === 'white' 
+            ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
+            : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+
+        if (abilitiesPieces[piece]?.self?.["contre-attack"]) {
+            const ability = abilitiesPieces[piece].self["contre-attack"]
+            abilities.contrAttack = ability.chance
+            abilities.contrAttackCoef = ability.coef
+        }
+
+        const datas = {
+            info:room.gameInfo,
+            isAttack: false
+        }
+
+        io.to(roomId).emit('turn-based-update', datas)
     })
+
     client.on("bishop-shoot-send", function(data){
+        const roomId = clientToRoom.get(client.id)
+        const room = rooms.get(roomId)
+        if (!room || room.gameInfo.gameStatus !== "turnBased") return
+
+        const playerColor = room.playerColors[client.id]
+        const opponentColor = playerColor === 'white' ? 'black' : 'white'
         
+        const piece = playerColor === 'white' 
+            ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
+            : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+
+        if (abilitiesPieces[piece]?.opponent?.["bishop-shoot"]) {
+            const ability = abilitiesPieces[piece].opponent["bishop-shoot"]
+            let damage = ability.damage
+            
+            // Bishop-shoot ignores shields/evasions, applies coef% damage after shield
+            if (ability.coef) {
+                damage = Math.floor(damage * (ability.coef / 100))
+            }
+
+            const opponentAbilities = opponentColor === 'white' 
+                ? room.gameInfo.turnBasedInfo.abilities.pieceW 
+                : room.gameInfo.turnBasedInfo.abilities.pieceB
+
+            // Apply damage (ignores evasion and def-piece per README)
+            if (opponentColor === 'white') {
+                room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - damage)
+            } else {
+                room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - damage)
+            }
+
+            // Still check counter-attack (bishop-shoot doesn't ignore counter-attack)
+            if (opponentAbilities.contrAttack > 0 && Math.random() * 100 < opponentAbilities.contrAttack) {
+                const counterDamage = Math.floor(damage * (opponentAbilities.contrAttackCoef / 100))
+                if (playerColor === 'white') {
+                    room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - counterDamage)
+                } else {
+                    room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - counterDamage)
+                }
+                opponentAbilities.contrAttack = 0
+                opponentAbilities.contrAttackCoef = 0
+            }
+
+            // Reset evasion
+            opponentAbilities.evasion = 0
+
+            // Switch turn
+            room.gameInfo.turnBasedInfo.currentTurn = opponentColor
+        }
+
+        const datas = {
+            info:room.gameInfo,
+            isAttack: true
+        }
+
+        io.to(roomId).emit('turn-based-update', datas)
     })
-
-
 
     client.on("healing-send", function(data){
-        
+        const roomId = clientToRoom.get(client.id)
+        const room = rooms.get(roomId)
+        if (!room || room.gameInfo.gameStatus !== "turnBased") return
+
+        const playerColor = room.playerColors[client.id]
+        const piece = playerColor === 'white' 
+            ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
+            : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+
+        if (abilitiesPieces[piece]?.self?.["healing"]) {
+            const ability = abilitiesPieces[piece].self["healing"]
+            const maxHp = hpCount[piece]
+            
+            if (playerColor === 'white') {
+                room.gameInfo.turnBasedInfo.hpW = Math.min(maxHp, room.gameInfo.turnBasedInfo.hpW + ability.heal)
+            } else {
+                room.gameInfo.turnBasedInfo.hpB = Math.min(maxHp, room.gameInfo.turnBasedInfo.hpB + ability.heal)
+            }
+
+            // Switch turn
+            room.gameInfo.turnBasedInfo.currentTurn = playerColor === 'white' ? 'black' : 'white'
+        }
+
+        const datas = {
+            info:room.gameInfo,
+            isAttack: false
+        }
+
+        io.to(roomId).emit('turn-based-update', datas)
     })
+
     client.on("heavy-shoot-send", function(data){
+        const roomId = clientToRoom.get(client.id)
+        const room = rooms.get(roomId)
+        if (!room || room.gameInfo.gameStatus !== "turnBased") return
+
+        const playerColor = room.playerColors[client.id]
+        const opponentColor = playerColor === 'white' ? 'black' : 'white'
         
+        const piece = playerColor === 'white' 
+            ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
+            : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+
+        if (abilitiesPieces[piece]?.opponent?.["heavy-shoot"]) {
+            const ability = abilitiesPieces[piece].opponent["heavy-shoot"]
+            let damage = ability.damage
+            
+            // 30% chance for 70 damage instead of 50
+            if (ability.coef && Math.random() * 100 < ability.coef) {
+                damage = ability.dmg_coef
+            }
+
+            // Check evasion
+            const opponentAbilities = opponentColor === 'white' 
+                ? room.gameInfo.turnBasedInfo.abilities.pieceW 
+                : room.gameInfo.turnBasedInfo.abilities.pieceB
+
+            let finalDamage = damage
+            if (opponentAbilities.evasion > 0 && Math.random() * 100 < opponentAbilities.evasion) {
+                finalDamage = 0 // Evaded
+            } else {
+                // Check def-piece (60% reduction)
+                const opponentPiece = opponentColor === 'white' 
+                    ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
+                    : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+                
+                if (opponentAbilities.defPiece && abilitiesPieces[opponentPiece]?.self?.["def-piece"]) {
+                    const defAbility = abilitiesPieces[opponentPiece].self["def-piece"]
+                    finalDamage = Math.floor(finalDamage * (1 - defAbility.dmg_def / 100))
+                    opponentAbilities.defPiece = false // Consume after use
+                }
+
+                // Apply spikes reflection (45% of damage)
+                if (opponentAbilities.spikes > 0) {
+                    const reflectedDamage = Math.floor(finalDamage * (opponentAbilities.spikes / 100))
+                    if (playerColor === 'white') {
+                        room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - reflectedDamage)
+                    } else {
+                        room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - reflectedDamage)
+                    }
+                }
+
+                // Apply damage
+                if (opponentColor === 'white') {
+                    room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - finalDamage)
+                } else {
+                    room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - finalDamage)
+                }
+
+                // Check counter-attack
+                if (opponentAbilities.contrAttack > 0 && Math.random() * 100 < opponentAbilities.contrAttack) {
+                    const counterDamage = Math.floor(damage * (opponentAbilities.contrAttackCoef / 100))
+                    if (playerColor === 'white') {
+                        room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - counterDamage)
+                    } else {
+                        room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - counterDamage)
+                    }
+                    opponentAbilities.contrAttack = 0
+                    opponentAbilities.contrAttackCoef = 0
+                }
+            }
+            
+            // Reset evasion
+            opponentAbilities.evasion = 0
+
+            // Skip next turn
+            const playerAbilities = playerColor === 'white' 
+                ? room.gameInfo.turnBasedInfo.abilities.pieceW 
+                : room.gameInfo.turnBasedInfo.abilities.pieceB
+            playerAbilities.skipTurn = true
+
+            // Switch turn
+            room.gameInfo.turnBasedInfo.currentTurn = opponentColor
+        }
+
+        const datas = {
+            info:room.gameInfo,
+            isAttack: true
+        }
+
+        io.to(roomId).emit('turn-based-update', datas)
     })
+
     client.on("rook-shoot-send", function(data){
+        const roomId = clientToRoom.get(client.id)
+        const room = rooms.get(roomId)
+        if (!room || room.gameInfo.gameStatus !== "turnBased") return
+
+        const playerColor = room.playerColors[client.id]
+        const opponentColor = playerColor === 'white' ? 'black' : 'white'
         
+        const piece = playerColor === 'white' 
+            ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
+            : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+
+        if (abilitiesPieces[piece]?.opponent?.["rook-shoot"]) {
+            const ability = abilitiesPieces[piece].opponent["rook-shoot"]
+            let damage = ability.damage
+
+            // Check evasion
+            const opponentAbilities = opponentColor === 'white' 
+                ? room.gameInfo.turnBasedInfo.abilities.pieceW 
+                : room.gameInfo.turnBasedInfo.abilities.pieceB
+
+            let finalDamage = damage
+            if (opponentAbilities.evasion > 0 && Math.random() * 100 < opponentAbilities.evasion) {
+                finalDamage = 0 // Evaded
+            } else {
+                // Check def-piece (60% reduction)
+                const opponentPiece = opponentColor === 'white' 
+                    ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
+                    : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+                
+                if (opponentAbilities.defPiece && abilitiesPieces[opponentPiece]?.self?.["def-piece"]) {
+                    const defAbility = abilitiesPieces[opponentPiece].self["def-piece"]
+                    finalDamage = Math.floor(finalDamage * (1 - defAbility.dmg_def / 100))
+                    opponentAbilities.defPiece = false // Consume after use
+                }
+
+                // Apply spikes reflection
+                if (opponentAbilities.spikes > 0) {
+                    const reflectedDamage = Math.floor(finalDamage * (opponentAbilities.spikes / 100))
+                    if (playerColor === 'white') {
+                        room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - reflectedDamage)
+                    } else {
+                        room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - reflectedDamage)
+                    }
+                }
+
+                // Apply damage
+                if (opponentColor === 'white') {
+                    room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - finalDamage)
+                } else {
+                    room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - finalDamage)
+                }
+
+                // Check counter-attack
+                if (opponentAbilities.contrAttack > 0 && Math.random() * 100 < opponentAbilities.contrAttack) {
+                    const counterDamage = Math.floor(damage * (opponentAbilities.contrAttackCoef / 100))
+                    if (playerColor === 'white') {
+                        room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - counterDamage)
+                    } else {
+                        room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - counterDamage)
+                    }
+                    opponentAbilities.contrAttack = 0
+                    opponentAbilities.contrAttackCoef = 0
+                }
+            }
+            
+            // Reset evasion
+            opponentAbilities.evasion = 0
+
+            // Switch turn
+            room.gameInfo.turnBasedInfo.currentTurn = opponentColor
+        }
+
+        const datas = {
+            info:room.gameInfo,
+            isAttack: true
+        }
+
+        io.to(roomId).emit('turn-based-update', datas)
     })
-
-
 
     client.on("stacking-send", function(data){
-        
+        const roomId = clientToRoom.get(client.id)
+        const room = rooms.get(roomId)
+        if (!room || room.gameInfo.gameStatus !== "turnBased") return
+
+        const playerColor = room.playerColors[client.id]
+        const abilities = playerColor === 'white' 
+            ? room.gameInfo.turnBasedInfo.abilities.pieceW 
+            : room.gameInfo.turnBasedInfo.abilities.pieceB
+
+        const piece = playerColor === 'white' 
+            ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
+            : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+
+        if (abilitiesPieces[piece]?.self?.["stacking"]) {
+            const ability = abilitiesPieces[piece].self["stacking"]
+            // Increase stacks, max 5
+            if (abilities.stacks < ability.max_stacks) {
+                abilities.stacks++
+            }
+
+            // Switch turn
+            room.gameInfo.turnBasedInfo.currentTurn = playerColor === 'white' ? 'black' : 'white'
+        }
+
+        const datas = {
+            info:room.gameInfo,
+            isAttack: false
+        }
+
+        io.to(roomId).emit('turn-based-update', datas)
     })
+
     client.on("kamicadze-send", function(data){
+        const roomId = clientToRoom.get(client.id)
+        const room = rooms.get(roomId)
+        if (!room || room.gameInfo.gameStatus !== "turnBased") return
+
+        const playerColor = room.playerColors[client.id]
+        const opponentColor = playerColor === 'white' ? 'black' : 'white'
         
+        const piece = playerColor === 'white' 
+            ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
+            : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+
+        if (abilitiesPieces[piece]?.opponent?.["kamicadze"]) {
+            const ability = abilitiesPieces[piece].opponent["kamicadze"]
+            let damage = ability.damage
+
+            // Multiply by stacks if Knight
+            const playerAbilities = playerColor === 'white' 
+                ? room.gameInfo.turnBasedInfo.abilities.pieceW 
+                : room.gameInfo.turnBasedInfo.abilities.pieceB
+            
+            if (abilitiesPieces[piece]?.self?.["stacking"] && playerAbilities.stacks > 1) {
+                damage = damage * playerAbilities.stacks
+                playerAbilities.stacks = 1 // Reset stacks after use
+            }
+
+            // Check evasion
+            const opponentAbilities = opponentColor === 'white' 
+                ? room.gameInfo.turnBasedInfo.abilities.pieceW 
+                : room.gameInfo.turnBasedInfo.abilities.pieceB
+
+            let finalDamage = damage
+            if (opponentAbilities.evasion > 0 && Math.random() * 100 < opponentAbilities.evasion) {
+                finalDamage = 0 // Evaded
+            } else {
+                // Check def-piece
+                const opponentPiece = opponentColor === 'white' 
+                    ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
+                    : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+                
+                if (opponentAbilities.defPiece && abilitiesPieces[opponentPiece]?.self?.["def-piece"]) {
+                    const defAbility = abilitiesPieces[opponentPiece].self["def-piece"]
+                    finalDamage = Math.floor(finalDamage * (1 - defAbility.dmg_def / 100))
+                    opponentAbilities.defPiece = false // Consume after use
+                }
+
+                // Apply spikes reflection
+                if (opponentAbilities.spikes > 0) {
+                    const reflectedDamage = Math.floor(finalDamage * (opponentAbilities.spikes / 100))
+                    if (playerColor === 'white') {
+                        room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - reflectedDamage)
+                    } else {
+                        room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - reflectedDamage)
+                    }
+                }
+
+                // Apply damage to opponent
+                if (opponentColor === 'white') {
+                    room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - finalDamage)
+                } else {
+                    room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - finalDamage)
+                }
+
+                // Check counter-attack
+                if (opponentAbilities.contrAttack > 0 && Math.random() * 100 < opponentAbilities.contrAttack) {
+                    const counterDamage = Math.floor(damage * (opponentAbilities.contrAttackCoef / 100))
+                    if (playerColor === 'white') {
+                        room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - counterDamage)
+                    } else {
+                        room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - counterDamage)
+                    }
+                    opponentAbilities.contrAttack = 0
+                    opponentAbilities.contrAttackCoef = 0
+                }
+            }
+            
+            // Reset evasion
+            opponentAbilities.evasion = 0
+
+            // Self damage (always applies, not evaded)
+            const selfDamage = ability.dmg_self
+            if (playerColor === 'white') {
+                room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - selfDamage)
+            } else {
+                room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - selfDamage)
+            }
+
+            // Switch turn
+            console.log("SWItch turn ",opponentColor)
+            room.gameInfo.turnBasedInfo.currentTurn = opponentColor
+        }
+
+        const datas = {
+            info:room.gameInfo,
+            isAttack: true
+        }
+
+        io.to(roomId).emit('turn-based-update', datas)
     })
-
-
 
     client.on("def-piece-send", function(data){
+        const roomId = clientToRoom.get(client.id)
+        const room = rooms.get(roomId)
+        if (!room || room.gameInfo.gameStatus !== "turnBased") return
 
+        const playerColor = room.playerColors[client.id]
+        const abilities = playerColor === 'white' 
+            ? room.gameInfo.turnBasedInfo.abilities.pieceW 
+            : room.gameInfo.turnBasedInfo.abilities.pieceB
+
+        const piece = playerColor === 'white' 
+            ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
+            : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+
+        if (abilitiesPieces[piece]?.self?.["def-piece"]) {
+            // Activate def-piece (60% damage reduction on next attack)
+            // Can be used every other turn (handled by client or add cooldown logic)
+            abilities.defPiece = true
+
+            // Switch turn
+            room.gameInfo.turnBasedInfo.currentTurn = playerColor === 'white' ? 'black' : 'white'
+        }
+
+        const datas = {
+            info:room.gameInfo,
+            isAttack: false
+        }
+
+        io.to(roomId).emit('turn-based-update', datas)
     })
-
 
     client.on("vampiring-send", function(data){
-        
-    })
-    client.on("spikes-send", function(data){
+        const roomId = clientToRoom.get(client.id)
+        const room = rooms.get(roomId)
+        if (!room || room.gameInfo.gameStatus !== "turnBased") return
 
-    })
-    client.on("prayers-send", function(data){
+        const playerColor = room.playerColors[client.id]
+        const opponentColor = playerColor === 'white' ? 'black' : 'white'
         
+        const piece = playerColor === 'white' 
+            ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
+            : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+
+        // Note: King abilities are under "k" key (line 111), but there's a conflict with Knight "k" (line 76)
+        // Assuming the second "k" entry is King
+        const kingAbilities = abilitiesPieces["k"]?.self
+        if (piece === "k" && kingAbilities?.["vampiring"]) {
+            const ability = kingAbilities["vampiring"]
+            
+            // Heal self
+            const maxHp = hpCount[piece]
+            if (playerColor === 'white') {
+                room.gameInfo.turnBasedInfo.hpW = Math.min(maxHp, room.gameInfo.turnBasedInfo.hpW + ability.heal)
+            } else {
+                room.gameInfo.turnBasedInfo.hpB = Math.min(maxHp, room.gameInfo.turnBasedInfo.hpB + ability.heal)
+            }
+
+            // Damage opponent (ignores evasion/shields per README)
+            if (opponentColor === 'white') {
+                room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - ability.damage)
+            } else {
+                room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - ability.damage)
+            }
+
+            // Switch turn
+            room.gameInfo.turnBasedInfo.currentTurn = opponentColor
+        }
+
+        const datas = {
+            info:room.gameInfo,
+            isAttack: false
+        }
+
+        io.to(roomId).emit('turn-based-update', datas)
+    })
+
+    client.on("spikes-send", function(data){
+        const roomId = clientToRoom.get(client.id)
+        const room = rooms.get(roomId)
+        if (!room || room.gameInfo.gameStatus !== "turnBased") return
+
+        const playerColor = room.playerColors[client.id]
+        const abilities = playerColor === 'white' 
+            ? room.gameInfo.turnBasedInfo.abilities.pieceW 
+            : room.gameInfo.turnBasedInfo.abilities.pieceB
+
+        const piece = playerColor === 'white' 
+            ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
+            : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+
+        // Note: King abilities are under "k" key
+        const kingAbilities = abilitiesPieces["k"]?.self
+        if (piece === "k" && kingAbilities?.["spikes"]) {
+            const ability = kingAbilities["spikes"]
+            // Set spikes shield (45% damage reflection)
+            abilities.spikes = ability.coef
+
+            // Switch turn
+            room.gameInfo.turnBasedInfo.currentTurn = playerColor === 'white' ? 'black' : 'white'
+        }
+
+        const datas = {
+            info:room.gameInfo,
+            isAttack: false
+        }
+
+        io.to(roomId).emit('turn-based-update', datas)
+    })
+
+    client.on("prayers-send", function(data){
+        const roomId = clientToRoom.get(client.id)
+        const room = rooms.get(roomId)
+        if (!room || room.gameInfo.gameStatus !== "turnBased") return
+
+        const playerColor = room.playerColors[client.id]
+        const opponentColor = playerColor === 'white' ? 'black' : 'white'
+        
+        const piece = playerColor === 'white' 
+            ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
+            : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+
+        // Note: King abilities are under "k" key
+        const kingAbilities = abilitiesPieces["k"]?.self
+        if (piece === "k" && kingAbilities?.["prayers"]) {
+            const ability = kingAbilities["prayers"]
+            
+            const opponentHp = opponentColor === 'white' 
+                ? room.gameInfo.turnBasedInfo.hpW 
+                : room.gameInfo.turnBasedInfo.hpB
+            const opponentMaxHp = opponentColor === 'white' 
+                ? hpCount[room.gameInfo.turnBasedInfo.pieceW.toLowerCase()]
+                : hpCount[room.gameInfo.turnBasedInfo.pieceB.toLowerCase()]
+            
+            const opponentHpPercent = (opponentHp / opponentMaxHp) * 100
+
+            if (opponentHpPercent < 15) {
+                // Kill opponent
+                if (opponentColor === 'white') {
+                    room.gameInfo.turnBasedInfo.hpW = 0
+                } else {
+                    room.gameInfo.turnBasedInfo.hpB = 0
+                }
+            } else {
+                // Take 40 damage
+                if (playerColor === 'white') {
+                    room.gameInfo.turnBasedInfo.hpW = Math.max(0, room.gameInfo.turnBasedInfo.hpW - ability.damage)
+                } else {
+                    room.gameInfo.turnBasedInfo.hpB = Math.max(0, room.gameInfo.turnBasedInfo.hpB - ability.damage)
+                }
+            }
+
+            // Switch turn
+            room.gameInfo.turnBasedInfo.currentTurn = opponentColor
+        }
+
+        const datas = {
+            info:room.gameInfo,
+            isAttack: false
+        }
+
+        io.to(roomId).emit('turn-based-update', datas)
     })
     
 

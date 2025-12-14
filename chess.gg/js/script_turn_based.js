@@ -32,7 +32,7 @@ const ImgLinks = {
     "Q":"/Source/Paws/v1/quin_b_2.png",
 }
 
-const hpCount = {
+const hpCount = { 
     "p":75,
     "r":130,
     "s":60,
@@ -54,7 +54,7 @@ const abilitiesPieces = {
         self:["healing"],
         opponent:["heavy-shoot","rook-shoot"]
     },
-    "k":{
+    "n":{
         self:["stacking"],
         opponent:["kamicadze"]
     },
@@ -81,8 +81,12 @@ const bgTurnBased = new Image();
 const cellSpell = new Image();
 const cloudColone = new Image();
 const colone = new Image();
-const handUp = new Image()
-const handPush = new Image ()
+const handUpB = new Image()
+const handPushB = new Image ()
+const handUpW = new Image()
+const handPushW = new Image ()
+const smashW = new Image ()
+const smashB = new Image ()
 
 
 
@@ -197,17 +201,41 @@ function preloadImages() {
         colone.onerror = resolve;
     }));
 
-    handUp.src = "/Source/TurnBased/IMG_0211.png";
+    handUpB.src = "/Source/TurnBased/hand_up_b.png";
     imagePromises.push(new Promise((resolve) => {
-        handUp.onload = resolve;
-        handUp.onerror = resolve;
+        handUpB.onload = resolve;
+        handUpB.onerror = resolve;
     }));
 
-    handPush.src = "/Source/TurnBased/IMG_0212.png";
+    handPushB.src = "/Source/TurnBased/hand_push_b.png";
     imagePromises.push(new Promise((resolve) => {
-        handPush.onload = resolve;
-        handPush.onerror = resolve;
+        handPushB.onload = resolve;
+        handPushB.onerror = resolve;
     }));
+
+    handUpW.src = "/Source/TurnBased/hand_up_w.png";
+    imagePromises.push(new Promise((resolve) => {
+        handUpW.onload = resolve;
+        handUpW.onerror = resolve;
+    }));
+
+    handPushW.src = "/Source/TurnBased/hand_push_w.png";
+    imagePromises.push(new Promise((resolve) => {
+        handPushW.onload = resolve;
+        handPushW.onerror = resolve;
+    }));
+    smashB.src = "/Source/TurnBased/smash_b.png";
+    imagePromises.push(new Promise((resolve) => {
+        smashB.onload = resolve;
+        smashB.onerror = resolve;
+    }));
+
+    smashW.src = "/Source/TurnBased/smash_w.png";
+    imagePromises.push(new Promise((resolve) => {
+        smashW.onload = resolve;
+        smashW.onerror = resolve;
+    }));
+    
     
     
     Promise.all(imagePromises).then(() => {
@@ -278,17 +306,43 @@ function draw(){
         ctxTurn.drawImage(colone, 650, 300);
         ctxTurn.drawImage(cloudColone, 620, 500);
 
-        //ctxTurn.drawImage(handUp, 125, 480, 60, 100);
-        ctxTurn.drawImage(ImgObj[pieceUse], 168, 460, 60, 125);
-        //ctxTurn.drawImage(handPush, 200, 490, 100, 60);
+        
+        ctxTurn.save();
+        ctxTurn.scale(-1, 1)
+        ctxTurn.drawImage(ImgObj[pieceUse], -168-60, 460, 60, 125);
+        ctxTurn.restore();
+        
+        //ctxTurn.drawImage(handUpB, 100, 500, 100, 80);
+        //ctxTurn.drawImage(handPushB, 190, 490, 100, 60);
+        //ctxTurn.drawImage(smashW, 120, 490, 150, 90); 
         
 
+        ctxTurn.save();
         ctxTurn.drawImage(ImgObj[pieceOpponent], 718, 210, 60, 125);
+        ctxTurn.restore();  
 
+        // ctxTurn.save();
+        // ctxTurn.scale(-1, 1)
+        // ctxTurn.drawImage(handUpB, -740-100, 250, 100, 80);
+        // ctxTurn.restore();
+
+        // ctxTurn.save();
+        // ctxTurn.scale(-1, 1)
+        // ctxTurn.drawImage(handPushB, -650-100, 240, 100, 60);
+        // ctxTurn.restore();
+
+        // ctxTurn.save();
+        // ctxTurn.scale(-1, 1)
+        // ctxTurn.drawImage(smashW, -720-100, 240, 150, 90); 
+        // ctxTurn.restore();
+
+        ctxTurn.drawImage(bar, 150, 595, 100, 25);
+        ctxTurn.drawImage(barHp,0,0,100*(hpUse/hpCount[pieceUse.toLowerCase()]),25, 150, 595, 105*(hpUse/hpCount[pieceUse.toLowerCase()]), 25);
+        ctxTurn.drawImage(bar, 700, 340, 100, 25);
+        ctxTurn.drawImage(barHp,0,0,100*(hpOpponent/hpCount[pieceOpponent.toLowerCase()]),50, 700, 335, 105*(hpOpponent/hpCount[pieceOpponent.toLowerCase()]), 50);
 
         if(selectedPieceTurn==="use"){
-            ctxTurn.drawImage(bar, 150, 595, 100, 25);
-            ctxTurn.drawImage(barHp,0,0,100*(hpUse/hpCount[pieceUse.toLowerCase()]),50, 150, 590, 105*(hpUse/hpCount[pieceUse.toLowerCase()]), 50);
+            
 
             const posUse = [[190,405,0],[270,435,0.9],[300,518,1.8]]
             for (let i = 0; i < abilitiesPieces[pieceUse.toLowerCase()].self.length; i++) {
@@ -300,8 +354,7 @@ function draw(){
             }
         }
         if(selectedPieceTurn==="opponent"){
-            ctxTurn.drawImage(bar, 700, 340, 100, 25);
-            ctxTurn.drawImage(barHp,0,0,100*(hpOpponent/hpCount[pieceOpponent.toLowerCase()]),50, 700, 335, 105*(hpOpponent/hpCount[pieceOpponent.toLowerCase()]), 50);
+            
 
             const posOpponent = [[740,145,0],[665,190,-0.9],[655,280,-1.8]]
             for (let i = 0; i < abilitiesPieces[pieceUse.toLowerCase()].opponent.length; i++) {
@@ -316,6 +369,62 @@ function draw(){
     }else{
         document.getElementById("canvas-turn").style = "display: none;"
         document.getElementById("panel-sq").style = "display: none;"
+    }
+
+}
+
+async function animAttack(isOpponent,turn){
+
+
+    if(gameStatus == "turnBased"){
+        if(!isOpponent){
+            const smash = yourColor === "white" ? smashW : smashB
+            const frame1 = yourColor === "white" ? handUpW : handUpB
+            const frame2 = yourColor === "white" ? handPushW : handPushB
+            
+                console.log("ANIM")
+                
+                draw()
+                ctxTurn.drawImage(frame1, 100, 500, 100, 80);
+                await new Promise(r => setTimeout(r, 250));
+
+                draw()
+                ctxTurn.drawImage(smash, 120, 490, 150, 90); 
+                await new Promise(r => setTimeout(r, 100));
+                
+                draw()
+                ctxTurn.drawImage(frame2, 190, 490, 100, 60);
+                await new Promise(r => setTimeout(r, 100));
+                draw()
+        }else if(isOpponent && turn === yourColor){
+            const smash = yourColor === "black" ? smashW : smashB
+            const frame1 = yourColor === "black" ? handUpW : handUpB
+            const frame2 = yourColor === "black" ? handPushW : handPushB
+
+            draw()
+            ctxTurn.save();
+            ctxTurn.scale(-1, 1)
+            ctxTurn.drawImage(frame1, -740-100, 250, 100, 80);
+            ctxTurn.restore();
+            await new Promise(r => setTimeout(r, 250));
+
+            draw()
+            ctxTurn.save();
+            ctxTurn.scale(-1, 1)
+            ctxTurn.drawImage(smash, -720-100, 240, 150, 90); 
+            ctxTurn.restore();
+            await new Promise(r => setTimeout(r, 100));
+            
+            draw()
+            ctxTurn.save();
+            ctxTurn.scale(-1, 1)
+            ctxTurn.drawImage(frame2, -650-100, 240, 100, 60);
+            ctxTurn.restore();
+            await new Promise(r => setTimeout(r, 100));
+
+            draw()
+
+        }
     }
 
 }
@@ -435,7 +544,7 @@ function getOpponentSpellCell(x, y) {
     return null;
 }
 
-function handleTurnBasedClick(e) {
+async function handleTurnBasedClick(e) {
     if (gameStatus !== 'turnBased') {
         return;
     }
@@ -464,8 +573,15 @@ function handleTurnBasedClick(e) {
 
     if (getPlayerSpellCell(scaledX, scaledY) !== null) {
         console.log(abilitiesPieces[pieceUse.toLowerCase()].self[getPlayerSpellCell(scaledX, scaledY)-1])
+        socket.emit(abilitiesPieces[pieceUse.toLowerCase()].self[getPlayerSpellCell(scaledX, scaledY)-1]+"-send",{})
+        selectedPieceTurn = null  
     }else if (getOpponentSpellCell(scaledX, scaledY) !== null) {
         console.log(abilitiesPieces[pieceUse.toLowerCase()].opponent[getOpponentSpellCell(scaledX, scaledY)-1])
+        animAttack(false)
+        await new Promise(r => setTimeout(r, 1000));
+        socket.emit(abilitiesPieces[pieceUse.toLowerCase()].opponent[getOpponentSpellCell(scaledX, scaledY)-1]+"-send",{})
+        selectedPieceTurn = null  
+        
     }else if (scaledX >= 168 && scaledX <= 168 + 60 && scaledY >= 460 && scaledY <= 460 + 125) {
         console.log("Player piece");
         selectedPieceTurn = "use"
@@ -1211,17 +1327,23 @@ socket.on('update-game-state', function(data){
 
 socket.on("turn-based-update",function(data){
 
-    gameStatus = data.gameStatus
+    if(data.isAttack){
+        animAttack(true, data.info.turnBasedInfo.currentTurn)
+    }
 
-    pieceUse = yourColor === 'white' ? data.turnBasedInfo.pieceW : data.turnBasedInfo.pieceB
-    pieceOpponent = yourColor === 'black' ? data.turnBasedInfo.pieceW : data.turnBasedInfo.pieceB
+    console.log(data)
+
+    gameStatus = data.info.gameStatus
+
+    pieceUse = yourColor === 'white' ? data.info.turnBasedInfo.pieceW : data.info.turnBasedInfo.pieceB
+    pieceOpponent = yourColor === 'black' ? data.info.turnBasedInfo.pieceW : data.info.turnBasedInfo.pieceB
     
     console.log(data)
     
-    hpUse =  yourColor === 'white' ? data.turnBasedInfo.hpW : data.turnBasedInfo.hpB
-    hpOpponent =  yourColor === 'black' ? data.turnBasedInfo.hpW : data.turnBasedInfo.hpB
+    hpUse =  yourColor === 'white' ? data.info.turnBasedInfo.hpW : data.info.turnBasedInfo.hpB
+    hpOpponent =  yourColor === 'black' ? data.info.turnBasedInfo.hpW : data.info.turnBasedInfo.hpB
 
-    currentBasedTurn = data.turnBasedInfo.currentTurn
+    currentBasedTurn = data.info.turnBasedInfo.currentTurn
 
     draw()
 
