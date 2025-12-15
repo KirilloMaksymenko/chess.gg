@@ -90,7 +90,6 @@ const smashB = new Image ()
 const bookRead = [new Image (),new Image (),new Image ()]
 
 
-
 let imagesLoaded = false;
 
 let selectedPiece = null; 
@@ -113,6 +112,7 @@ let hpUse = null
 let hpOpponent = null
 let currentBasedTurn = null
 let selectedPieceTurn = null
+let winnerBasedTurn = null
 
 // let timerWhite = 600;
 // let timerBlack = 600;
@@ -318,7 +318,12 @@ function draw(){
 
         ctxTurn.save()
         ctxTurn.font = '24px "Rock Salt", serif ';
-        ctxTurn.fillText("Turn: "+(yourColor === currentBasedTurn ? "your" : currentBasedTurn), canvasTurn.width/2-100, 100)
+        if(winnerBasedTurn){
+            ctxTurn.fillText("WINNER: "+winnerBasedTurn, canvasTurn.width/2-100, 100)
+        }else{
+            ctxTurn.fillText("Turn: "+(yourColor === currentBasedTurn ? "your" : currentBasedTurn), canvasTurn.width/2-100, 100)
+        }
+        
         ctxTurn.restore()
 
         ctxTurn.drawImage(colone, 100, 550);
@@ -874,12 +879,19 @@ function selectNewPawn(pos,L){
 
 }
 
-function startTurnBased(pieceUse,pieceOpponent){
+function startTurnBased(pieceUse,pieceOpponent,posB,posW){
+    console.log("STARTTURN")
+    winnerBasedTurn = null
 
     const data = {
         pieceW: pieceUse === pieceUse.toLowerCase() ? pieceUse : pieceOpponent,
         pieceB: pieceUse === pieceUse.toUpperCase() ? pieceUse : pieceOpponent,
-        currentTurn: yourColor
+        currentTurn: yourColor,
+        lastPos: {
+            posB: posB,
+            posW: posW
+        }
+
     }
 
     socket.emit("start-turn-based",data)
@@ -887,13 +899,15 @@ function startTurnBased(pieceUse,pieceOpponent){
 }   
 
 
-function movePiece(fromCol, fromRow, toCol, toRow) {
+function movePiece(fromCol, fromRow, toCol, toRow, isAttacked=false) {
+    console.log("PIECE")
+
     countTurn += 1
 
     const piece = map[fromCol][fromRow];
     const pieceColor = piece === piece.toLowerCase() ? 'white' : 'black';
     
-    if (pieceColor !== currentTurn) {
+    if (pieceColor !== currentTurn && !isAttacked) {
         return;
     }
 
@@ -903,10 +917,13 @@ function movePiece(fromCol, fromRow, toCol, toRow) {
 
 
     console.log("enem", enemyColor(map[fromCol][fromRow],map[toCol][toRow]),map[fromCol][fromRow],map[toCol][toRow])
-    if(enemyColor(map[fromCol][fromRow],map[toCol][toRow])){
-        return startTurnBased(map[fromCol][fromRow] ,map[toCol][toRow])
+    if(enemyColor(map[fromCol][fromRow],map[toCol][toRow]) && !isAttacked){
+        console.log("NONO")
+        return startTurnBased(map[fromCol][fromRow] ,map[toCol][toRow],pieceColor === 'white' ? [toCol,toRow]:[fromCol,fromRow],pieceColor === 'black' ? [toCol,toRow]:[fromCol,fromRow])
     }
 
+
+    console.log("MOVE",map[fromCol][fromRow],"TO" ,map[toCol][toRow],"PIECE",piece)
 
     if(piece =="p" && toRow == 0){
         map[toCol][toRow] = piece;
@@ -925,6 +942,8 @@ function movePiece(fromCol, fromRow, toCol, toRow) {
     }else{
         map[toCol][toRow] = piece;
     }
+    
+    
 
     map[fromCol][fromRow] = "";
 
@@ -936,9 +955,9 @@ function movePiece(fromCol, fromRow, toCol, toRow) {
     }
     
 
-    
-    updateData()
     draw();
+    updateData()
+    
 }
 
 function updateData(){
@@ -1285,7 +1304,7 @@ socket.on('room-rejoined', function(data) {
         if (data.playerColors) {
             console.log('Player colors:', data.playerColors)
         }
-
+        console.log("PROBLEM")
         gameStatus = data.gameInfo.gameStatus
 
         if(gameStatus == "turnBased"){
@@ -1303,7 +1322,6 @@ socket.on('room-rejoined', function(data) {
 
         countTurn = data.gameInfo.countTurn
         currentTurn = data.gameInfo.currentTurn
-        gameStatus = data.gameInfo.gameStatus
         winner = data.gameInfo.winner
 
         flipMap(data.gameInfo.map)
@@ -1368,6 +1386,7 @@ socket.on('error', function(error) {
 socket.on('update-game-state', function(data){
     countTurn = data.countTurn
     currentTurn = data.currentTurn
+    console.log("PROBLEM")
     gameStatus = data.gameStatus
     winner = data.winner
     gamemode = data.gamemode
@@ -1406,6 +1425,30 @@ socket.on("turn-based-update",function(data){
 
 })
 
+
+socket.on("turn-based-winner",async function(data){
+
+    if(data.isAttack){
+        animAttack(true, data.info.turnBasedInfo.currentTurn)
+    }else{
+        animSpell(true,data.info.turnBasedInfo.currentTurn)
+    } 
+    console.log(data)
+    
+    currentBasedTurn = data.info.turnBasedInfo.currentTurn
+    winnerBasedTurn = data.info.turnBasedInfo.winner
+    draw()
+
+    await new Promise(r => setTimeout(r, 3000));
+    gameStatus = data.info.gameStatus
+    if(yourColor===winnerBasedTurn){
+        console.log(winnerBasedTurn === 'white' ? data.info.lastPosW[0] : data.info.lastPosB[0], winnerBasedTurn === 'white' ? data.info.lastPosW[1] : data.info.lastPosB[1], winnerBasedTurn === 'black' ? data.info.lastPosW[0] : data.info.lastPosB[0], winnerBasedTurn === 'black' ? data.info.lastPosW[1] : data.info.lastPosB[1])
+        movePiece(winnerBasedTurn === 'white' ? data.info.lastPosW[0] : data.info.lastPosB[0], winnerBasedTurn === 'white' ? data.info.lastPosW[1] : data.info.lastPosB[1], winnerBasedTurn === 'black' ? data.info.lastPosW[0] : data.info.lastPosB[0], winnerBasedTurn === 'black' ? data.info.lastPosW[1] : data.info.lastPosB[1],true)
+    
+    }
+
+    draw()
+})
 
 
 

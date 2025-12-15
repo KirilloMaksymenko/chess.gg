@@ -212,7 +212,7 @@ function getAvailableRooms() {
     const availableRooms = []
     rooms.forEach((room, roomId) => {
         const playersCount = room.players ? room.players.length : 0
-        // if (playersCount < 2) {
+        if (playersCount < 2) {
             availableRooms.push({
                 roomId: roomId,
                 gamemode:room.gameInfo.gamemode,
@@ -220,7 +220,7 @@ function getAvailableRooms() {
                 maxPlayers: 2,
                 spectatorsCount: room.spectators ? room.spectators.length : 0
             })
-        // }
+        }
     })
     //console.log(`getAvailableRooms: found ${availableRooms.length} rooms out of ${rooms.size} total`)
     return availableRooms
@@ -259,21 +259,12 @@ function cleanupRoom(roomId) {
     const roomAgeMs = Date.now() - createdAt
 
     const EMPTY_ROOM_TIMEOUT_MS = 5 * 1000 
-    // Більший таймаут для кімнат з гравцями в originalPlayerOrder (вони можуть переприєднатися)
-    const ROOM_WITH_PLAYERS_TIMEOUT_MS = 60 * 1000 // 60 секунд
+    const ROOM_WITH_PLAYERS_TIMEOUT_MS = 60 * 1000 
 
-    // Не видаляємо кімнату якщо:
-    // 1. Є активні гравці або глядачі
-    // 2. Є гравці в originalPlayerOrder (вони можуть переприєднатися) - даємо більше часу
-    // 3. Кімната ще дуже нова (менше 5 секунд)
     if (playersCount === 0 && spectatorsCount === 0 && originalPlayersCount === 0 && roomAgeMs > EMPTY_ROOM_TIMEOUT_MS) {
-        // Повністю порожня кімната без гравців в originalPlayerOrder
         rooms.delete(roomId)
         console.log(`Room ${roomId} deleted (empty for more than ${EMPTY_ROOM_TIMEOUT_MS / 1000} sec)`)
     } else if (originalPlayersCount > 0 && playersCount === 0) {
-        // Якщо є гравці в originalPlayerOrder, але немає активних гравців,
-        // це означає що гравці тимчасово відключені і можуть переприєднатися
-        // Видаляємо тільки якщо кімната дуже стара
         if (roomAgeMs > ROOM_WITH_PLAYERS_TIMEOUT_MS) {
             rooms.delete(roomId)
             console.log(`Room ${roomId} deleted (has players in originalPlayerOrder but no active players for more than ${ROOM_WITH_PLAYERS_TIMEOUT_MS / 1000} sec)`)
@@ -282,40 +273,6 @@ function cleanupRoom(roomId) {
         }
     }
 }
-
-// function eloCalc(elo1,elo2,winner){
-
-//     const P1 = elo1 / (elo1+elo2)
-//     const P2 = elo2 / (elo1+elo2)
-
-//     elo1 = elo1 + kcof*(winner === 'white' ? 1 : 0 - P1) 
-//     elo2 = elo2 + kcof*(winner === 'white' ? 0 : 1 - P2)
-
-//     return {player1: elo1, player2: elo2}
-// }
-
-
-
-function timerStart(){
-    
-}
-
-
-
-function timerTimeout(game){
-    // if(gameInfo.currentTurn
-
-    // intervalWhite = setInterval(() => {
-        
-    // }, 1000);
-}
-
-
-
-
-
-
-
 
 
 io.sockets.on('connection', function (client) {
@@ -352,7 +309,10 @@ io.sockets.on('connection', function (client) {
                     timerBlack: 600,
                     timerWhite: 600,
                     disableTimer: false,
+                    lastPosW:[],
+                    lastPosB:[],
                     turnBasedInfo: {
+                        winner: null,
                         pieceW: null,
                         pieceB: null,
                         hpW: null,
@@ -972,7 +932,6 @@ io.sockets.on('connection', function (client) {
         room.gameInfo.gameStatus = data["gameStatus"]
         room.gameInfo.winner = data["winner"]
         room.gameInfo.log[room.gameInfo.countTurn] = data.log
-        timerTimeout(room.gameInfo);
         console.log(room)
         
         io.to(roomId).emit('update-game-state',room.gameInfo)
@@ -1003,7 +962,43 @@ io.sockets.on('connection', function (client) {
         const roomId = clientToRoom.get(client.id)
         const room = rooms.get(roomId)
 
+
+        room.gameInfo.lastPosB = data.lastPos.posB
+        room.gameInfo.lastPosW = data.lastPos.posW
+        console.log("LAST POS ",room.gameInfo, data)
         room.gameInfo.gameStatus = "turnBased"
+
+        room.gameInfo.turnBasedInfo = {
+            winner: null,
+            pieceW: null,
+            pieceB: null,
+            hpW: null,
+            hpB: null,
+            currentTurn: null,
+            abilities:{
+                pieceW:{
+                    evasion:0,
+                    contrAttack:0,
+                    contrAttackCoef:0,
+                    skipTurn:false,
+                    stacks:1,
+                    spikes:0,
+                    usePrayers:false,
+                    defPiece:false,
+                },
+                pieceB:{
+                    evasion:0,
+                    contrAttack:0,
+                    contrAttackCoef:0,
+                    skipTurn:false,
+                    stacks:1,
+                    spikes:0,
+                    usePrayers:false,
+                    defPiece:false,
+                }
+            }
+        }
+
         room.gameInfo.turnBasedInfo.pieceW = data.pieceW
         room.gameInfo.turnBasedInfo.pieceB = data.pieceB
         room.gameInfo.turnBasedInfo.hpW = hpCount[data.pieceW.toLowerCase()]
@@ -1019,37 +1014,23 @@ io.sockets.on('connection', function (client) {
     })
 
 
-    // "p":{
-    //     self:["evasion"],
-    //     opponent:["pawn-shoot"]
-    // },
-    // "s":{
-    //     self:["contre-attack","evasion"],
-    //     opponent:["bishop-shoot"] // ignore all shields/evasions
-    // },
-    // "r":{
-    //     self:["healing"],
-    //     opponent:["heavy-shoot","rook-shoot"]
-    // },
-    // "k":{
-    //     self:["stacking"],
-    //     opponent:["kamicadze"]
-    // },
-    // "q":{
-    //     self:["def-piece"],
-    //     opponent:["heavy-shoot","kamicadze","bishop-shoot"]
-    // },
-    // "k":{
-    //     self:["vampiring","spikes","prayers"],
-    //     opponent:[]
-    // }
+    function checkWinner(room){
+        if(room.gameInfo.turnBasedInfo.hpW == 0){
+            return 'black'
+        }
+        if(room.gameInfo.turnBasedInfo.hpB == 0){
+            return 'white'
+        }
+        return null
+
+    }
 
 
     function checkEvasion(opponentAbilities){
         return opponentAbilities.evasion > 0 && Math.random() * 100 < opponentAbilities.evasion
     }
 
-    function checkDefPiece(finalDamage,opponentAbilities){
+    function checkDefPiece(finalDamage,opponentAbilities,opponentPiece){
         if (opponentAbilities.defPiece && abilitiesPieces[opponentPiece]?.self?.["def-piece"]) {
             const defAbility = abilitiesPieces[opponentPiece].self["def-piece"]
             finalDamage = Math.floor(finalDamage * (1 - defAbility.dmg_def / 100))
@@ -1109,13 +1090,22 @@ io.sockets.on('connection', function (client) {
         }
         
         room.gameInfo.turnBasedInfo.currentTurn = playerColor === 'white' ? 'black' : 'white'
+        room.gameInfo.turnBasedInfo.winner = checkWinner(room)
 
         const datas = {
             info:room.gameInfo,
             isAttack: false
         }
 
-        io.to(roomId).emit('turn-based-update', datas)
+        if(!room.gameInfo.turnBasedInfo.winner){
+            io.to(roomId).emit('turn-based-update', datas)
+        }else{
+            room.gameInfo.turnBasedInfo.currentTurn = null
+            room.gameInfo.gameStatus = "playing"
+            datas.info = room.gameInfo
+            io.to(roomId).emit('turn-based-winner', datas)
+        }
+        
 
     })
 
@@ -1142,7 +1132,7 @@ io.sockets.on('connection', function (client) {
                 finalDamage = 0 
             } else {
                 const opponentPiece = opponentColor === 'white' ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase() : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
-                checkDefPiece(finalDamage,opponentAbilities)
+                checkDefPiece(finalDamage,opponentAbilities,opponentPiece)
                 checkSpikes(room,opponentAbilities)
                 checkDamage(room,opponentColor,finalDamage)
                 checkContreAttack(room,opponentAbilities,damage,playerColor)
@@ -1152,13 +1142,21 @@ io.sockets.on('connection', function (client) {
         }
 
         room.gameInfo.turnBasedInfo.currentTurn = opponentColor
+        room.gameInfo.turnBasedInfo.winner = checkWinner(room)
 
         const datas = {
             info:room.gameInfo,
             isAttack: true
         }
 
-        io.to(roomId).emit('turn-based-update', datas)
+        if(!room.gameInfo.turnBasedInfo.winner){
+            io.to(roomId).emit('turn-based-update', datas)
+        }else{
+            room.gameInfo.turnBasedInfo.currentTurn = null
+            room.gameInfo.gameStatus = "playing"
+            datas.info = room.gameInfo
+            io.to(roomId).emit('turn-based-winner', datas)
+        }
     })
 
     client.on("contre-attack-send", function(data){
@@ -1178,14 +1176,21 @@ io.sockets.on('connection', function (client) {
         }
 
         room.gameInfo.turnBasedInfo.currentTurn = playerColor === 'white' ? 'black' : 'white'
+        room.gameInfo.turnBasedInfo.winner = checkWinner(room)
 
         const datas = {
             info:room.gameInfo,
             isAttack: false
         }
 
-        io.to(roomId).emit('turn-based-update', datas)
-    })
+        if(!room.gameInfo.turnBasedInfo.winner){
+            io.to(roomId).emit('turn-based-update', datas)
+        }else{
+            room.gameInfo.turnBasedInfo.currentTurn = null
+            room.gameInfo.gameStatus = "playing"
+            datas.info = room.gameInfo
+            io.to(roomId).emit('turn-based-winner', datas)
+        }    })
 
     client.on("bishop-shoot-send", function(data){
         const roomId = clientToRoom.get(client.id)
@@ -1227,6 +1232,7 @@ io.sockets.on('connection', function (client) {
             opponentAbilities.evasion = 0
 
             room.gameInfo.turnBasedInfo.currentTurn = opponentColor
+            room.gameInfo.turnBasedInfo.winner = checkWinner(room)
         }
 
         const datas = {
@@ -1234,8 +1240,14 @@ io.sockets.on('connection', function (client) {
             isAttack: true
         }
 
-        io.to(roomId).emit('turn-based-update', datas)
-    })
+        if(!room.gameInfo.turnBasedInfo.winner){
+            io.to(roomId).emit('turn-based-update', datas)
+        }else{
+            room.gameInfo.turnBasedInfo.currentTurn = null
+            room.gameInfo.gameStatus = "playing"
+            datas.info = room.gameInfo
+            io.to(roomId).emit('turn-based-winner', datas)
+        }    })
 
     client.on("healing-send", function(data){
         const roomId = clientToRoom.get(client.id)
@@ -1257,14 +1269,21 @@ io.sockets.on('connection', function (client) {
         }
 
         room.gameInfo.turnBasedInfo.currentTurn = playerColor === 'white' ? 'black' : 'white'
+        room.gameInfo.turnBasedInfo.winner = checkWinner(room)
 
         const datas = {
             info:room.gameInfo,
             isAttack: false
         }
 
-        io.to(roomId).emit('turn-based-update', datas)
-    })
+        if(!room.gameInfo.turnBasedInfo.winner){
+            io.to(roomId).emit('turn-based-update', datas)
+        }else{
+            room.gameInfo.turnBasedInfo.currentTurn = null
+            room.gameInfo.gameStatus = "playing"
+            datas.info = room.gameInfo
+            io.to(roomId).emit('turn-based-winner', datas)
+        }    })
 
     client.on("heavy-shoot-send", function(data){
         const roomId = clientToRoom.get(client.id)
@@ -1292,7 +1311,7 @@ io.sockets.on('connection', function (client) {
             } else {
                 const opponentPiece = opponentColor === 'white' ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase(): room.gameInfo.turnBasedInfo.pieceB.toLowerCase() 
 
-                checkDefPiece(finalDamage,opponentAbilities)
+                checkDefPiece(finalDamage,opponentAbilities,opponentPiece)
                 checkSpikes(room,opponentAbilities)
                 checkDamage(room,opponentColor,finalDamage)
                 checkContreAttack(room,opponentAbilities,damage,playerColor)
@@ -1305,14 +1324,21 @@ io.sockets.on('connection', function (client) {
         }
 
         room.gameInfo.turnBasedInfo.currentTurn = opponentColor
+        room.gameInfo.turnBasedInfo.winner = checkWinner(room)
 
         const datas = {
             info:room.gameInfo,
             isAttack: true
         }
 
-        io.to(roomId).emit('turn-based-update', datas)
-    })
+        if(!room.gameInfo.turnBasedInfo.winner){
+            io.to(roomId).emit('turn-based-update', datas)
+        }else{
+            room.gameInfo.turnBasedInfo.currentTurn = null
+            room.gameInfo.gameStatus = "playing"
+            datas.info = room.gameInfo
+            io.to(roomId).emit('turn-based-winner', datas)
+        }    })
 
     client.on("rook-shoot-send", function(data){
         const roomId = clientToRoom.get(client.id)
@@ -1338,7 +1364,7 @@ io.sockets.on('connection', function (client) {
             } else {
                 const opponentPiece = opponentColor === 'white' ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase(): room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
     
-                checkDefPiece(finalDamage,opponentAbilities)
+                checkDefPiece(finalDamage,opponentAbilities,opponentPiece)
                 checkSpikes(room,opponentAbilities)
                 checkDamage(room,opponentColor,finalDamage)
                 checkContreAttack(room,opponentAbilities,damage,playerColor)
@@ -1348,14 +1374,21 @@ io.sockets.on('connection', function (client) {
         }
 
         room.gameInfo.turnBasedInfo.currentTurn = opponentColor
+        room.gameInfo.turnBasedInfo.winner = checkWinner(room)
 
         const datas = {
             info:room.gameInfo,
             isAttack: true
         }
 
-        io.to(roomId).emit('turn-based-update', datas)
-    })
+        if(!room.gameInfo.turnBasedInfo.winner){
+            io.to(roomId).emit('turn-based-update', datas)
+        }else{
+            room.gameInfo.turnBasedInfo.currentTurn = null
+            room.gameInfo.gameStatus = "playing"
+            datas.info = room.gameInfo
+            io.to(roomId).emit('turn-based-winner', datas)
+        }    })
 
     client.on("stacking-send", function(data){
         const roomId = clientToRoom.get(client.id)
@@ -1376,13 +1409,21 @@ io.sockets.on('connection', function (client) {
             room.gameInfo.turnBasedInfo.currentTurn = playerColor === 'white' ? 'black' : 'white'
         }
 
+        room.gameInfo.turnBasedInfo.winner = checkWinner(room)
+
         const datas = {
             info:room.gameInfo,
             isAttack: false
         }
 
-        io.to(roomId).emit('turn-based-update', datas)
-    })
+        if(!room.gameInfo.turnBasedInfo.winner){
+            io.to(roomId).emit('turn-based-update', datas)
+        }else{
+            room.gameInfo.turnBasedInfo.currentTurn = null
+            room.gameInfo.gameStatus = "playing"
+            datas.info = room.gameInfo
+            io.to(roomId).emit('turn-based-winner', datas)
+        }    })
 
     client.on("kamicadze-send", function(data){
         const roomId = clientToRoom.get(client.id)
@@ -1413,7 +1454,7 @@ io.sockets.on('connection', function (client) {
             } else {
                 const opponentPiece = opponentColor === 'white' ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase(): room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
                 
-                checkDefPiece(finalDamage,opponentAbilities)
+                checkDefPiece(finalDamage,opponentAbilities,opponentPiece)
                 checkSpikes(room,opponentAbilities)
                 checkDamage(room,opponentColor,finalDamage)
                 checkContreAttack(room,opponentAbilities,damage,playerColor)
@@ -1431,13 +1472,21 @@ io.sockets.on('connection', function (client) {
             room.gameInfo.turnBasedInfo.currentTurn = opponentColor
         }
 
+        room.gameInfo.turnBasedInfo.winner = checkWinner(room)
+
         const datas = {
             info:room.gameInfo,
             isAttack: true
         }
 
-        io.to(roomId).emit('turn-based-update', datas)
-    })
+        if(!room.gameInfo.turnBasedInfo.winner){
+            io.to(roomId).emit('turn-based-update', datas)
+        }else{
+            room.gameInfo.turnBasedInfo.currentTurn = null
+            room.gameInfo.gameStatus = "playing"
+            datas.info = room.gameInfo
+            io.to(roomId).emit('turn-based-winner', datas)
+        }    })
 
     client.on("def-piece-send", function(data){
         const roomId = clientToRoom.get(client.id)
@@ -1454,13 +1503,21 @@ io.sockets.on('connection', function (client) {
             room.gameInfo.turnBasedInfo.currentTurn = playerColor === 'white' ? 'black' : 'white'
         }
 
+        room.gameInfo.turnBasedInfo.winner = checkWinner(room)
+
         const datas = {
             info:room.gameInfo,
             isAttack: false
         }
 
-        io.to(roomId).emit('turn-based-update', datas)
-    })
+        if(!room.gameInfo.turnBasedInfo.winner){
+            io.to(roomId).emit('turn-based-update', datas)
+        }else{
+            room.gameInfo.turnBasedInfo.currentTurn = null
+            room.gameInfo.gameStatus = "playing"
+            datas.info = room.gameInfo
+            io.to(roomId).emit('turn-based-winner', datas)
+        }    })
 
     client.on("vampiring-send", function(data){
         const roomId = clientToRoom.get(client.id)
@@ -1492,13 +1549,21 @@ io.sockets.on('connection', function (client) {
             room.gameInfo.turnBasedInfo.currentTurn = opponentColor
         }
 
+        room.gameInfo.turnBasedInfo.winner = checkWinner(room)
+
         const datas = {
             info:room.gameInfo,
             isAttack: false
         }
 
-        io.to(roomId).emit('turn-based-update', datas)
-    })
+        if(!room.gameInfo.turnBasedInfo.winner){
+            io.to(roomId).emit('turn-based-update', datas)
+        }else{
+            room.gameInfo.turnBasedInfo.currentTurn = null
+            room.gameInfo.gameStatus = "playing"
+            datas.info = room.gameInfo
+            io.to(roomId).emit('turn-based-winner', datas)
+        }    })
 
     client.on("spikes-send", function(data){
         const roomId = clientToRoom.get(client.id)
@@ -1517,13 +1582,21 @@ io.sockets.on('connection', function (client) {
             room.gameInfo.turnBasedInfo.currentTurn = playerColor === 'white' ? 'black' : 'white'
         }
 
+        room.gameInfo.turnBasedInfo.winner = checkWinner(room)
+
         const datas = {
             info:room.gameInfo,
             isAttack: false
         }
 
-        io.to(roomId).emit('turn-based-update', datas)
-    })
+        if(!room.gameInfo.turnBasedInfo.winner){
+            io.to(roomId).emit('turn-based-update', datas)
+        }else{
+            room.gameInfo.turnBasedInfo.currentTurn = null
+            room.gameInfo.gameStatus = "playing"
+            datas.info = room.gameInfo
+            io.to(roomId).emit('turn-based-winner', datas)
+        }    })
 
     client.on("prayers-send", function(data){
         const roomId = clientToRoom.get(client.id)
@@ -1561,13 +1634,21 @@ io.sockets.on('connection', function (client) {
             room.gameInfo.turnBasedInfo.currentTurn = opponentColor
         }
 
+        room.gameInfo.turnBasedInfo.winner = checkWinner(room)
+
         const datas = {
             info:room.gameInfo,
             isAttack: false
         }
 
-        io.to(roomId).emit('turn-based-update', datas)
-    })
+        if(!room.gameInfo.turnBasedInfo.winner){
+            io.to(roomId).emit('turn-based-update', datas)
+        }else{
+            room.gameInfo.turnBasedInfo.currentTurn = null
+            room.gameInfo.gameStatus = "playing"
+            datas.info = room.gameInfo
+            io.to(roomId).emit('turn-based-winner', datas)
+        }    })
     
 
 
