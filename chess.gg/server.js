@@ -2,6 +2,8 @@ const http = require('http')
 const fs = require('fs')
 const path = require('path')
 const { randomInt } = require('crypto')
+const ngrok = require('@ngrok/ngrok');
+require('dotenv').config();
 
 const PORT = 12345
 const kcof = 50
@@ -192,6 +194,10 @@ const server = http.createServer((req, res) => {
         })
     }
 })
+
+ngrok.connect({ addr: 12345, authtoken_from_env: true }).then(listener => console.log(`Ingress established at: ${listener.url()}`));
+
+
 
 const io = require('socket.io')(server, {
     cors: {

@@ -80,6 +80,40 @@ body{
 .bt-join-img{
     width: 40px;
 }
+.mode-select-block{
+    margin-top: -20px;
+    margin-bottom: 40px;
+    display: flex;
+}
+.item-mode{
+    display: flex;
+    align-items: center;
+    margin: 0 10px;
+}
+.select-mode-input{
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+
+}
+
+.checkmark{
+    width: 15px;
+    height: 15px;
+}
+
+.text-gamemode{
+    font-size: 16px;
+}
+
+[type=radio] + img {
+    cursor: pointer;
+}
+
+[type=radio]:checked + img {
+    content:url("/Source/point_att.png");
+}
 
 
 
@@ -123,37 +157,16 @@ body{
         margin: 10px 50px;
         flex-direction: column;
     }
+
+    .text-gamemode{
+        font-size: 16px;
+    }
+    
+    .mode-select-block {
+        display: flex;
+        flex-direction: column;
+    }
 }
 
 
 
-.mode-select-block{
-    margin-top: -20px;
-    margin-bottom: 40px;
-    display: flex;
-}
-.item-mode{
-    display: flex;
-    align-items: center;
-    margin: 0 10px;
-}
-.select-mode-input{
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
-
-}
-
-.checkmark{
-    width: 15px;
-    height: 15px;
-}
-
-[type=radio] + img {
-    cursor: pointer;
-}
-
-[type=radio]:checked + img {
-    content:url("/Source/point_att.png");
-}

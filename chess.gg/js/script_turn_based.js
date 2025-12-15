@@ -925,6 +925,7 @@ function selectNewPawn(pos,L){
 
     map[pos[0]][pos[1]] = L;
     gameStatus = 'playing'
+    currentTurn = currentTurn === 'white' ? 'black' : 'white';
     updateData()
 
 }
@@ -938,7 +939,7 @@ function startTurnBased(pieceUse,pieceOpponent,posB,posW){
         pieceB: pieceUse === pieceUse.toUpperCase() ? pieceUse : pieceOpponent,
         currentTurn: yourColor,
         lastPos: {
-            posB: posB,
+            posB: [posB[0]],
             posW: posW
         }
 
@@ -969,7 +970,14 @@ function movePiece(fromCol, fromRow, toCol, toRow, isAttacked=false) {
     console.log("enem", enemyColor(map[fromCol][fromRow],map[toCol][toRow]),map[fromCol][fromRow],map[toCol][toRow])
     if(enemyColor(map[fromCol][fromRow],map[toCol][toRow]) && !isAttacked){
         console.log("NONO")
-        return startTurnBased(map[fromCol][fromRow] ,map[toCol][toRow],pieceColor === 'white' ? [toCol,toRow]:[fromCol,fromRow],pieceColor === 'black' ? [toCol,toRow]:[fromCol,fromRow])
+
+        if(pieceColor === 'white'){
+            return startTurnBased(map[fromCol][fromRow] ,map[toCol][toRow],pieceColor === 'white' ? [toCol,toRow]:[fromCol,fromRow],pieceColor === 'black' ? [toCol,toRow]:[fromCol,fromRow])
+        }else{
+            return startTurnBased(map[fromCol][fromRow] ,map[toCol][toRow],pieceColor === 'white' ? [8-toCol,8-toRow]:[8-fromCol,8-fromRow],pieceColor === 'black' ? [8-toCol,8-toRow]:[8-fromCol,8-fromRow])
+        }
+
+        
     }
 
 
@@ -986,7 +994,7 @@ function movePiece(fromCol, fromRow, toCol, toRow, isAttacked=false) {
         
 
 
-    }else if(piece =="P" && toRow == 7){
+    }else if(piece =="P" && toRow == 0){
 
 
         map[toCol][toRow] = piece;
@@ -1507,8 +1515,13 @@ socket.on("turn-based-winner",async function(data){
     await new Promise(r => setTimeout(r, 3000));
     gameStatus = data.info.gameStatus
     if(yourColor===winnerBasedTurn){
-        console.log(winnerBasedTurn === 'white' ? data.info.lastPosW[0] : data.info.lastPosB[0], winnerBasedTurn === 'white' ? data.info.lastPosW[1] : data.info.lastPosB[1], winnerBasedTurn === 'black' ? data.info.lastPosW[0] : data.info.lastPosB[0], winnerBasedTurn === 'black' ? data.info.lastPosW[1] : data.info.lastPosB[1])
-        movePiece(winnerBasedTurn === 'white' ? data.info.lastPosW[0] : data.info.lastPosB[0], winnerBasedTurn === 'white' ? data.info.lastPosW[1] : data.info.lastPosB[1], winnerBasedTurn === 'black' ? data.info.lastPosW[0] : data.info.lastPosB[0], winnerBasedTurn === 'black' ? data.info.lastPosW[1] : data.info.lastPosB[1],true)
+        const colFrom = winnerBasedTurn === 'white' ? data.info.lastPosW[0] : data.info.lastPosB[0]
+        const rowFrom = winnerBasedTurn === 'white' ? data.info.lastPosW[1] : data.info.lastPosB[1]
+        const colTo = winnerBasedTurn === 'black' ? data.info.lastPosW[0] : data.info.lastPosB[0]
+        const rowTo = winnerBasedTurn === 'black' ? data.info.lastPosW[1] : data.info.lastPosB[1]
+        
+        console.log(colFrom, rowFrom, colTo, rowTo)
+        movePiece(colFrom, rowFrom, colTo, rowTo,true)
     
     }
 

@@ -436,6 +436,7 @@ function selectNewPawn(pos,L){
 
     map[pos[0]][pos[1]] = L;
     gameStatus = 'playing'
+    currentTurn = currentTurn === 'white' ? 'black' : 'white';
     updateData()
 
 }
@@ -461,7 +462,7 @@ function movePiece(fromCol, fromRow, toCol, toRow) {
         
 
 
-    }else if(piece =="P" && toRow == 7){
+    }else if(piece =="P" && toRow == 0){
 
 
         map[toCol][toRow] = piece;
