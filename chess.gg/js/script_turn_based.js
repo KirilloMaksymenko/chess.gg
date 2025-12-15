@@ -68,6 +68,39 @@ const abilitiesPieces = {
     }
 }
 
+const abilitiesDescription = {
+    "p":{
+        "evasion":"You have chance to evasion 35%",
+        "pawn-shoot":"You take 20 dmg"
+    },
+    "s":{
+        "contre-attack":"For next opponent turn you have chance to contre attack opponent on 45%",
+        "evasion":"You have chance to evasion 35%",
+        "bishop-shoot":"You take 20 dmg and ignore all shields/evasions", // ignore all shields/evasions
+    },
+    "r":{
+        "healing":"You heal 15 hp",
+        "heavy-shoot":"You take 50 dmg and with chance 30% 70 dmg, but you skip next turn",
+        "rook-shoot":"You take 15 dmg"
+    },
+    "n":{
+        "stacking":"You restore one stack, max 5 stacks",
+        "kamicadze":"You take 15 dmg * stacks, but you tacke 10 dmg"
+    },
+    "q":{
+        "def-piece":"You take on 60% less dmg",
+        "heavy-shoot":"You take 50 dmg and with chance 30% 70 dmg, but you skip next turn",
+        "kamicadze":"You take 35 dmg , but you tacke 10 dmg",
+        "bishop-shoot":"You take 25 dmg and ignore all shields/evasions"
+    },
+    "k":{
+        "vampiring":"You heal 20 hp and take 20 dmg to opponent",
+        "spikes":"If opponent attack you, to him return 45% dmg",
+        "prayers":"If opponent have less than 25% hp he DEAD, but if more, you take 40 dmg"
+    }
+}
+
+
 const ImgObj = {};
 const bgImage = new Image();
 const pointImage = new Image();
@@ -105,6 +138,7 @@ let currentTurn = 'white'; // 'white'  'black'
 let gameStatus = 'playing'; // 'playing', 'check', 'checkmate', 'stalemate' ,'selectNewPawn' , 'turnBased'
 let winner = null; // 'white', 'black', null
 let loseShow = false;
+let kingDead = false
 
 let pieceUse = null
 let pieceOpponent = null
@@ -316,6 +350,17 @@ function draw(){
         ctxTurn.drawImage(bgTurnBased, 0, 0);
         ctxTurn.drawImage(battleGround, 15, 325);
 
+        let c = 1
+        for(let key in abilitiesDescription[pieceUse.toLowerCase()]){
+            ctxTurn.save()
+            ctxTurn.font = '16px "Rock Salt", serif ';
+            ctxTurn.fillText(c+"."+key+"->", 50, 150+30*c*2-30)
+            ctxTurn.fillText("  "+abilitiesDescription[pieceUse.toLowerCase()][key], 50, 150+30*c*2)
+            ctxTurn.restore()
+            c++
+        }
+      
+
         ctxTurn.save()
         ctxTurn.font = '24px "Rock Salt", serif ';
         if(winnerBasedTurn){
@@ -356,6 +401,11 @@ function draw(){
                 ctxTurn.rotate(posUse[i][2])
                 ctxTurn.drawImage(cellSpell, -(cellSpell.width/2), -(cellSpell.height/2), 110, 75);
                 ctxTurn.restore();  
+                ctxTurn.save()
+                ctxTurn.font = '24px "Rock Salt", serif ';
+                ctxTurn.fillText(abilitiesPieces[pieceUse.toLowerCase()].self[i], posUse[i][0]-(cellSpell.width/2), posUse[i][1])
+                ctxTurn.restore(); 
+
             }
         }
         if(selectedPieceTurn==="opponent"){
@@ -368,6 +418,10 @@ function draw(){
                 ctxTurn.rotate(posOpponent[i][2])
                 ctxTurn.drawImage(cellSpell, -(cellSpell.width/2), -(cellSpell.height/2), 110, 75);
                 ctxTurn.restore();  
+                ctxTurn.save()
+                ctxTurn.font = '24px "Rock Salt", serif ';
+                ctxTurn.fillText(abilitiesPieces[pieceUse.toLowerCase()].opponent[i], posOpponent[i][0]-(cellSpell.width/2), posOpponent[i][1])
+                ctxTurn.restore(); 
             }
         }
 
@@ -832,15 +886,11 @@ function updateGameStatus() {
     if(gameStatus == 'selectNewPawn' || gameStatus == 'turnBased'){
         return
     }
-    if (!hasMoves) {
-        if (inCheck) {
-            gameStatus = 'checkmate';
-            winner = currentTurn === 'white' ? 'black' : 'white';
-            socket.emit("checkmate-gameover",winner)
+    if (kingDead) {
+        gameStatus = 'checkmate';
+        winner = currentTurn === 'white' ? 'black' : 'white';
+        socket.emit("checkmate-gameover",winner)
             
-        } else {
-            gameStatus = 'stalemate';
-        }
     } else if (inCheck) {
         gameStatus = 'check';
     } else {
@@ -881,7 +931,7 @@ function selectNewPawn(pos,L){
 
 function startTurnBased(pieceUse,pieceOpponent,posB,posW){
     console.log("STARTTURN")
-    winnerBasedTurn = null
+    
 
     const data = {
         pieceW: pieceUse === pieceUse.toLowerCase() ? pieceUse : pieceOpponent,
@@ -925,6 +975,10 @@ function movePiece(fromCol, fromRow, toCol, toRow, isAttacked=false) {
 
     console.log("MOVE",map[fromCol][fromRow],"TO" ,map[toCol][toRow],"PIECE",piece)
 
+
+    if(map[toCol][toRow].toLowerCase() =="k"){
+        kingDead = true
+    }
     if(piece =="p" && toRow == 0){
         map[toCol][toRow] = piece;
         gameStatus = 'selectNewPawn'
@@ -1402,6 +1456,11 @@ socket.on('update-game-state', function(data){
 })
 
 socket.on("turn-based-update",function(data){
+    const abilities = yourColor === 'white' ? data.info.turnBasedInfo.abilities.pieceW : data.info.turnBasedInfo.abilities.pieceB
+    if(abilities.skipTurn && data.info.turnBasedInfo.currentTurn === yourColor){
+        socket.emit("skip-turn-send",{})
+        return
+    }
 
     if(data.isAttack){
         animAttack(true, data.info.turnBasedInfo.currentTurn)
@@ -1412,6 +1471,7 @@ socket.on("turn-based-update",function(data){
     console.log(data)
 
     gameStatus = data.info.gameStatus
+    winnerBasedTurn = data.info.turnBasedInfo.winner
 
     pieceUse = yourColor === 'white' ? data.info.turnBasedInfo.pieceW : data.info.turnBasedInfo.pieceB
     pieceOpponent = yourColor === 'black' ? data.info.turnBasedInfo.pieceW : data.info.turnBasedInfo.pieceB
@@ -1435,6 +1495,11 @@ socket.on("turn-based-winner",async function(data){
     } 
     console.log(data)
     
+    pieceUse = yourColor === 'white' ? data.info.turnBasedInfo.pieceW : data.info.turnBasedInfo.pieceB
+    pieceOpponent = yourColor === 'black' ? data.info.turnBasedInfo.pieceW : data.info.turnBasedInfo.pieceB
+    
+    hpUse =  yourColor === 'white' ? data.info.turnBasedInfo.hpW : data.info.turnBasedInfo.hpB
+    hpOpponent =  yourColor === 'black' ? data.info.turnBasedInfo.hpW : data.info.turnBasedInfo.hpB
     currentBasedTurn = data.info.turnBasedInfo.currentTurn
     winnerBasedTurn = data.info.turnBasedInfo.winner
     draw()

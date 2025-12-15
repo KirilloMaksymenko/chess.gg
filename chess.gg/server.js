@@ -99,11 +99,11 @@ const abilitiesPieces = {
                 dmg_coef: 70
             },
             "kamicadze":{
-                damage: 50,
+                damage: 35,
                 dmg_self: 20
             },
             "bishop-shoot":{
-                damage: 30,
+                damage: 25,
                 coef: 35
             }
         }
@@ -1039,7 +1039,7 @@ io.sockets.on('connection', function (client) {
         return finalDamage
     }
 
-    function checkSpikes(room,opponentAbilities){
+    function checkSpikes(room,opponentAbilities,finalDamage,playerColor){
         if (opponentAbilities.spikes > 0) {
             const reflectedDamage = Math.floor(finalDamage * (opponentAbilities.spikes / 100))
             if (playerColor === 'white') {
@@ -1071,6 +1071,40 @@ io.sockets.on('connection', function (client) {
         }
     }
 
+
+    client.on("skip-turn-send", function(data){
+        const roomId = clientToRoom.get(client.id)
+        const room = rooms.get(roomId)
+        if (!room || room.gameInfo.gameStatus !== "turnBased") return
+
+        const playerColor = room.playerColors[client.id]
+        const abilities = playerColor === 'white' ? room.gameInfo.turnBasedInfo.abilities.pieceW : room.gameInfo.turnBasedInfo.abilities.pieceB
+
+        const piece = playerColor === 'white' ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase() : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+
+        if (abilities.skipTurn) {
+            room.gameInfo.turnBasedInfo.currentTurn = playerColor === 'white' ? 'black' : 'white'
+            abilities.skipTurn = false
+        }
+
+        room.gameInfo.turnBasedInfo.winner = checkWinner(room)
+
+        const datas = {
+            info:room.gameInfo,
+            isAttack: false
+        }
+
+        if(!room.gameInfo.turnBasedInfo.winner){
+            io.to(roomId).emit('turn-based-update', datas)
+        }else{
+            room.gameInfo.turnBasedInfo.currentTurn = null
+            room.gameInfo.gameStatus = "playing"
+            datas.info = room.gameInfo
+            io.to(roomId).emit('turn-based-winner', datas)
+        }
+
+
+    })
 
 
 
@@ -1133,7 +1167,7 @@ io.sockets.on('connection', function (client) {
             } else {
                 const opponentPiece = opponentColor === 'white' ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase() : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
                 checkDefPiece(finalDamage,opponentAbilities,opponentPiece)
-                checkSpikes(room,opponentAbilities)
+                checkSpikes(room,opponentAbilities,finalDamage,playerColor)
                 checkDamage(room,opponentColor,finalDamage)
                 checkContreAttack(room,opponentAbilities,damage,playerColor)
             }
@@ -1312,15 +1346,18 @@ io.sockets.on('connection', function (client) {
                 const opponentPiece = opponentColor === 'white' ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase(): room.gameInfo.turnBasedInfo.pieceB.toLowerCase() 
 
                 checkDefPiece(finalDamage,opponentAbilities,opponentPiece)
-                checkSpikes(room,opponentAbilities)
+                checkSpikes(room,opponentAbilities,finalDamage,playerColor)
                 checkDamage(room,opponentColor,finalDamage)
                 checkContreAttack(room,opponentAbilities,damage,playerColor)
             }
             
             opponentAbilities.evasion = 0
 
-            const playerAbilities = playerColor === 'white' ? room.gameInfo.turnBasedInfo.abilities.pieceW : room.gameInfo.turnBasedInfo.abilities.pieceB
-            playerAbilities.skipTurn = true
+            if(playerColor === 'white'){
+                room.gameInfo.turnBasedInfo.abilities.pieceW.skipTurn = true
+            }else{
+                room.gameInfo.turnBasedInfo.abilities.pieceB.skipTurn = true
+            }
         }
 
         room.gameInfo.turnBasedInfo.currentTurn = opponentColor
@@ -1348,9 +1385,7 @@ io.sockets.on('connection', function (client) {
         const playerColor = room.playerColors[client.id]
         const opponentColor = playerColor === 'white' ? 'black' : 'white'
         
-        const piece = playerColor === 'white' 
-            ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase()
-            : room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
+        const piece = playerColor === 'white' ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase(): room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
 
         if (abilitiesPieces[piece]?.opponent?.["rook-shoot"]) {
             const ability = abilitiesPieces[piece].opponent["rook-shoot"]
@@ -1365,7 +1400,7 @@ io.sockets.on('connection', function (client) {
                 const opponentPiece = opponentColor === 'white' ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase(): room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
     
                 checkDefPiece(finalDamage,opponentAbilities,opponentPiece)
-                checkSpikes(room,opponentAbilities)
+                checkSpikes(room,opponentAbilities,finalDamage,playerColor)
                 checkDamage(room,opponentColor,finalDamage)
                 checkContreAttack(room,opponentAbilities,damage,playerColor)
             }
@@ -1455,7 +1490,7 @@ io.sockets.on('connection', function (client) {
                 const opponentPiece = opponentColor === 'white' ? room.gameInfo.turnBasedInfo.pieceW.toLowerCase(): room.gameInfo.turnBasedInfo.pieceB.toLowerCase()
                 
                 checkDefPiece(finalDamage,opponentAbilities,opponentPiece)
-                checkSpikes(room,opponentAbilities)
+                checkSpikes(room,opponentAbilities,finalDamage,playerColor)
                 checkDamage(room,opponentColor,finalDamage)
                 checkContreAttack(room,opponentAbilities,damage,playerColor)
             }
@@ -1679,15 +1714,11 @@ io.sockets.on('connection', function (client) {
 
                 io.emit('rooms-list', getAvailableRooms())
                 
-                // Не викликаємо cleanupRoom одразу, якщо є гравці в originalPlayerOrder
-                // Вони можуть переприєднатися, тому даємо час
                 const originalPlayersCount = room.originalPlayerOrder ? room.originalPlayerOrder.filter(id => id).length : 0
                 if (originalPlayersCount === 0) {
-                    // Тільки якщо немає гравців в originalPlayerOrder, викликаємо cleanupRoom
                     cleanupRoom(roomId)
                 } else {
                     console.log(`Room ${roomId} cleanup deferred (has ${originalPlayersCount} players in originalPlayerOrder who may rejoin)`)
-                    // Викликаємо cleanupRoom з затримкою, щоб дати час на переприєднання
                     setTimeout(() => cleanupRoom(roomId), 1000)
                 }
             }
