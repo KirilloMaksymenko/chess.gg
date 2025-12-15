@@ -971,8 +971,8 @@ function movePiece(fromCol, fromRow, toCol, toRow, isAttacked=false) {
     if(enemyColor(map[fromCol][fromRow],map[toCol][toRow]) && !isAttacked){
         console.log("NONO")
 
-        const fromPos = yourColor === 'white' ? [fromCol,fromRow] : [fromCol,7-fromRow]
-        const toPos = yourColor === 'white' ? [toCol,toRow] : [toCol,7-toRow]
+        const fromPos = yourColor === 'white' ? [fromCol,fromRow] : [fromCol,fromRow]
+        const toPos = yourColor === 'white' ? [toCol,toRow] : [toCol,toRow]
 
         console.log(fromPos,toPos)
 
