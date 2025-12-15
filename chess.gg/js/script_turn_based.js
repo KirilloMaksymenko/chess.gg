@@ -939,7 +939,7 @@ function startTurnBased(pieceUse,pieceOpponent,posB,posW){
         pieceB: pieceUse === pieceUse.toUpperCase() ? pieceUse : pieceOpponent,
         currentTurn: yourColor,
         lastPos: {
-            posB: [posB[0]],
+            posB: posB,
             posW: posW
         }
 
@@ -971,13 +971,12 @@ function movePiece(fromCol, fromRow, toCol, toRow, isAttacked=false) {
     if(enemyColor(map[fromCol][fromRow],map[toCol][toRow]) && !isAttacked){
         console.log("NONO")
 
-        if(pieceColor === 'white'){
-            return startTurnBased(map[fromCol][fromRow] ,map[toCol][toRow],pieceColor === 'white' ? [toCol,toRow]:[fromCol,fromRow],pieceColor === 'black' ? [toCol,toRow]:[fromCol,fromRow])
-        }else{
-            return startTurnBased(map[fromCol][fromRow] ,map[toCol][toRow],pieceColor === 'white' ? [8-toCol,8-toRow]:[8-fromCol,8-fromRow],pieceColor === 'black' ? [8-toCol,8-toRow]:[8-fromCol,8-fromRow])
-        }
+        const fromPos = yourColor === 'white' ? [fromCol,fromRow] : [fromCol,7-fromRow]
+        const toPos = yourColor === 'white' ? [toCol,toRow] : [toCol,7-toRow]
 
-        
+        console.log(fromPos,toPos)
+
+        return startTurnBased(map[fromCol][fromRow] ,map[toCol][toRow],pieceColor === 'white' ? toPos:fromPos, pieceColor === 'black' ? toPos:fromPos)
     }
 
 
