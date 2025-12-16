@@ -971,8 +971,14 @@ function movePiece(fromCol, fromRow, toCol, toRow, isAttacked=false) {
     if(enemyColor(map[fromCol][fromRow],map[toCol][toRow]) && !isAttacked){
         console.log("NONO")
 
-        const fromPos = yourColor === 'white' ? [fromCol,fromRow] : [fromCol,fromRow]
-        const toPos = yourColor === 'white' ? [toCol,toRow] : [toCol,toRow]
+        // Нормалізуємо координати: для чорних карта в UI перевернута, тому інвертуємо
+        const normalizePos = (col, row) => (
+            yourColor === 'white'
+                ? [col, row]
+                : [7 - col, 7 - row]
+        )
+        const fromPos = normalizePos(fromCol, fromRow)
+        const toPos = normalizePos(toCol, toRow)
 
         console.log(fromPos,toPos)
 

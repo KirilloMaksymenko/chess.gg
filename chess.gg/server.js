@@ -195,7 +195,7 @@ const server = http.createServer((req, res) => {
     }
 })
 
-//ngrok.connect({ addr: 12345, authtoken_from_env: true }).then(listener => console.log(`Ingress established at: ${listener.url()}`));
+ngrok.connect({ addr: 12345, authtoken_from_env: true }).then(listener => console.log(`Ingress established at: ${listener.url()}`));
 
 
 
