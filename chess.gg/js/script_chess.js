@@ -132,7 +132,7 @@ function draw(){
 
     if(gameStatus == "selectNewPawn" && yourColor === currentTurn){
         const piecSelect = ["r","n","s","q"]
-        const piece = map[posSelect[0]][posSelect[1]]
+        let piece = map[posSelect[0]][posSelect[1]]
         if(gamemode==="mode-Black"){
             piece = piece.toUpperCase()
         }
