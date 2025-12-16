@@ -971,14 +971,8 @@ function movePiece(fromCol, fromRow, toCol, toRow, isAttacked=false) {
     if(enemyColor(map[fromCol][fromRow],map[toCol][toRow]) && !isAttacked){
         console.log("NONO")
 
-        // Нормалізуємо координати: для чорних карта в UI перевернута, тому інвертуємо
-        const normalizePos = (col, row) => (
-            yourColor === 'white'
-                ? [col, row]
-                : [7 - col, 7 - row]
-        )
-        const fromPos = normalizePos(fromCol, fromRow)
-        const toPos = normalizePos(toCol, toRow)
+        const fromPos =yourColor === 'white'? [fromCol, fromRow]: [fromCol, 7 - fromRow] 
+        const toPos = yourColor === 'white'? [toCol, toRow]: [toCol, 7 - toRow]  
 
         console.log(fromPos,toPos)
 
@@ -1520,13 +1514,11 @@ socket.on("turn-based-winner",async function(data){
     await new Promise(r => setTimeout(r, 3000));
     gameStatus = data.info.gameStatus
     if(yourColor===winnerBasedTurn){
-        const colFrom = winnerBasedTurn === 'white' ? data.info.lastPosW[0] : data.info.lastPosB[0]
-        const rowFrom = winnerBasedTurn === 'white' ? data.info.lastPosW[1] : data.info.lastPosB[1]
-        const colTo = winnerBasedTurn === 'black' ? data.info.lastPosW[0] : data.info.lastPosB[0]
-        const rowTo = winnerBasedTurn === 'black' ? data.info.lastPosW[1] : data.info.lastPosB[1]
+        const posFrom = winnerBasedTurn === 'white' ? data.info.lastPosW : [data.info.lastPosB[0],7-data.info.lastPosB[1]]
+        const posTo = winnerBasedTurn === 'black' ? [data.info.lastPosW[0],7-data.info.lastPosW[1]] : data.info.lastPosB
         
-        console.log(colFrom, rowFrom, colTo, rowTo)
-        movePiece(colFrom, rowFrom, colTo, rowTo,true)
+        console.log(posFrom,posTo)
+        movePiece(posFrom[0], posFrom[1], posTo[0], posTo[1],true)
     
     }
 
