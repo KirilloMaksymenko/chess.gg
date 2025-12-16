@@ -962,8 +962,9 @@ function movePiece(fromCol, fromRow, toCol, toRow, isAttacked=false) {
         return;
     }
 
-
-    msg = countTurn+". "+ pieceColor + ": " + String.fromCharCode(fromCol+65) + ""+ (8-fromRow) + " -> "+ String.fromCharCode(toCol+65) + ""+ (8-toRow)
+    const rT = yourColor === 'white'? toRow: 7-toRow
+    const rF = yourColor === 'white'? fromRow: 7-fromRow
+    msg = countTurn+". "+ pieceColor + ": " + String.fromCharCode(fromCol+65) + ""+ (8-rF) + " -> "+ String.fromCharCode(toCol+65) + ""+ (8-rT)
     if(enemyColor(map[fromCol][fromRow],map[toCol][toRow])) msg+= " #"+map[toCol][toRow]
 
 
