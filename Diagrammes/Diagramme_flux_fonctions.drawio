@@ -1,0 +1,404 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.2.9">
+  <diagram name="Flux Fonctions" id="flux-fonctions">
+    <mxGraphModel dx="4837" dy="1121" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2800" pageHeight="2000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="event-click" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=center;" value="Event: Click/Touch&#xa;canvas.addEventListener(&#39;click&#39;, movePoint)" vertex="1">
+          <mxGeometry height="60" width="180" x="100" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="movePoint" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=center;" value="movePoint(e)" vertex="1">
+          <mxGeometry height="50" width="180" x="100" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="getCell" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=center;" value="getCell(x, y)" vertex="1">
+          <mxGeometry height="50" width="180" x="-10" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="getValidMovesWithCheck" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=center;" value="getValidMovesWithCheck(piece, pos)" vertex="1">
+          <mxGeometry height="50" width="220" x="-240" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="getValidMoves" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=center;" value="getValidMoves(piece, pos)" vertex="1">
+          <mxGeometry height="50" width="180" x="-250" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="pawnMoves" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=center;" value="pawnMoves(piece, pos)" vertex="1">
+          <mxGeometry height="50" width="150" x="10" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="smoothPath" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=center;" value="smoothPath(directions, pos)" vertex="1">
+          <mxGeometry height="50" width="180" x="180" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="pointPos" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=center;" value="pointPos(directions, pos)" vertex="1">
+          <mxGeometry height="50" width="180" x="370" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="-SYhqb9jdyiIbfzmjzsv-1" edge="1" parent="1" source="wouldMovePutKingInCheck" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=1;exitDx=0;exitDy=0;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="370" y="440" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="wouldMovePutKingInCheck" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=center;" value="wouldMovePutKingInCheck(from, to, color)" vertex="1">
+          <mxGeometry height="50" width="250" x="250" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="isKingInCheck" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=center;" value="isKingInCheck(color)" vertex="1">
+          <mxGeometry height="50" width="150" x="550" y="420" as="geometry" />
+        </mxCell>
+        <mxCell id="findKing" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=center;" value="findKing(color)" vertex="1">
+          <mxGeometry height="50" width="130" x="770" y="420" as="geometry" />
+        </mxCell>
+        <mxCell id="showMoves" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=center;" value="showMoves(piece, pos)" vertex="1">
+          <mxGeometry height="50" width="180" x="-290" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="isValidMove" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=center;" value="isValidMove(col, row)" vertex="1">
+          <mxGeometry height="50" width="150" x="350" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="movePiece" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=center;" value="movePiece(fromCol, fromRow, toCol, toRow)" vertex="1">
+          <mxGeometry height="50" width="280" x="-320" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="updateData" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=center;" value="updateData()" vertex="1">
+          <mxGeometry height="50" width="180" x="-30" y="830" as="geometry" />
+        </mxCell>
+        <mxCell id="updateGameStatus" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=center;" value="updateGameStatus()" vertex="1">
+          <mxGeometry height="50" width="180" x="-270" y="870" as="geometry" />
+        </mxCell>
+        <mxCell id="hasValidMoves" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=center;" value="hasValidMoves(color)" vertex="1">
+          <mxGeometry height="50" width="180" x="-510" y="740" as="geometry" />
+        </mxCell>
+        <mxCell id="displayGameStatus" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=center;" value="displayGameStatus()" vertex="1">
+          <mxGeometry height="50" width="180" x="450" y="830" as="geometry" />
+        </mxCell>
+        <mxCell id="socketEmitGameTurn" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=center;" value="socket.emit(&#39;game-turn&#39;, data)" vertex="1">
+          <mxGeometry height="50" width="220" x="105" y="975" as="geometry" />
+        </mxCell>
+        <mxCell id="draw" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=center;" value="draw()" vertex="1">
+          <mxGeometry height="50" width="100" x="690" y="930" as="geometry" />
+        </mxCell>
+        <mxCell id="selectNewPawn" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=center;" value="selectNewPawn(pos, L)" vertex="1">
+          <mxGeometry height="50" width="180" x="350" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="getCellSelect" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=center;" value="getCellSelect(x, y)" vertex="1">
+          <mxGeometry height="50" width="180" x="480" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="serverCreateRoom" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=center;" value="client.on(&#39;create-room&#39;)" vertex="1">
+          <mxGeometry height="60" width="200" x="1170" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="generateRoomId" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=center;" value="generateRoomId()" vertex="1">
+          <mxGeometry height="50" width="180" x="950" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="setClientRole" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=center;" value="setClientRole(id, role)" vertex="1">
+          <mxGeometry height="50" width="180" x="950" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="setClientColor" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=center;" value="setClientColor(id, color)" vertex="1">
+          <mxGeometry height="50" width="180" x="950" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="getAvailableRooms" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=center;" value="getAvailableRooms()" vertex="1">
+          <mxGeometry height="50" width="180" x="950" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="serverJoinRoom" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=center;" value="client.on(&#39;join-room&#39;)" vertex="1">
+          <mxGeometry height="60" width="200" x="1250" y="305" as="geometry" />
+        </mxCell>
+        <mxCell id="serverGameTurn" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=center;" value="client.on(&#39;game-turn&#39;)" vertex="1">
+          <mxGeometry height="50" width="200" x="1200" y="960" as="geometry" />
+        </mxCell>
+        <mxCell id="serverEmitUpdate" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=center;" value="io.to(roomId).emit(&#39;update-game-state&#39;)" vertex="1">
+          <mxGeometry height="50" width="280" x="1200" y="1050" as="geometry" />
+        </mxCell>
+        <mxCell id="clientSocketOnUpdate" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=center;" value="socket.on(&#39;update-game-state&#39;)" vertex="1">
+          <mxGeometry height="50" width="250" x="90" y="1050" as="geometry" />
+        </mxCell>
+        <mxCell id="flipMap" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=center;" value="flipMap(data)" vertex="1">
+          <mxGeometry height="50" width="150" x="100" y="1140" as="geometry" />
+        </mxCell>
+        <mxCell id="clientCreateRoom" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=center;" value="createRoom()" vertex="1">
+          <mxGeometry height="60" width="150" x="1700" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="clientJoinRoom" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=center;" value="joinRoom(roomId)" vertex="1">
+          <mxGeometry height="60" width="150" x="1865" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="clientEmitCreateRoom" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=center;" value="socket.emit(&#39;create-room&#39;)" vertex="1">
+          <mxGeometry height="50" width="200" x="1630" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="clientEmitJoinRoom" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=center;" value="socket.emit(&#39;join-room&#39;)" vertex="1">
+          <mxGeometry height="50" width="200" x="1840" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow1" edge="1" parent="1" source="event-click" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" target="movePoint" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow2" edge="1" parent="1" source="movePoint" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1;labelBackgroundColor=#ffffff;exitX=0.25;exitY=1;exitDx=0;exitDy=0;" target="getCell" value="appelle">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow3" edge="1" parent="1" source="movePoint" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1;" target="getCellSelect" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="320" y="175" />
+              <mxPoint x="320" y="305" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow4" edge="1" parent="1" source="movePoint" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1;" target="selectNewPawn" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="320" y="175" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow5" edge="1" parent="1" source="movePoint" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1;" target="isValidMove" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="280" y="175" />
+              <mxPoint x="425" y="175" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow6" edge="1" parent="1" source="movePoint" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1;" target="getValidMovesWithCheck" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow7" edge="1" parent="1" source="movePoint" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" target="draw" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="190" y="805" />
+              <mxPoint x="400" y="805" />
+              <mxPoint x="400" y="943" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow8" edge="1" parent="1" source="getValidMovesWithCheck" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1;labelBackgroundColor=#ffffff;exitX=0.368;exitY=1.043;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="getValidMoves" value="appelle">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow9" edge="1" parent="1" source="getValidMovesWithCheck" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1;" target="wouldMovePutKingInCheck" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="320" y="355" />
+              <mxPoint x="405" y="355" />
+              <mxPoint x="405" y="445" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow10" edge="1" parent="1" source="getValidMoves" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1;" target="pawnMoves" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="140" y="470" />
+              <mxPoint x="95" y="470" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow11" edge="1" parent="1" source="getValidMoves" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1;" target="smoothPath" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="140" y="470" />
+              <mxPoint x="280" y="470" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow12" edge="1" parent="1" source="getValidMoves" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1;" target="pointPos" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="140" y="470" />
+              <mxPoint x="480" y="470" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow13" edge="1" parent="1" source="wouldMovePutKingInCheck" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1;labelBackgroundColor=#ffffff;" target="isKingInCheck" value="appelle">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow14" edge="1" parent="1" source="isKingInCheck" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1;labelBackgroundColor=#ffffff;" target="findKing" value="appelle">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow15" edge="1" parent="1" source="movePoint" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1;exitX=0.617;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="showMoves" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="210" y="200" />
+              <mxPoint x="210" y="410" />
+              <mxPoint x="-10" y="410" />
+              <mxPoint x="-10" y="545" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow16" edge="1" parent="1" source="showMoves" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1;" target="pawnMoves" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="100" y="625" />
+              <mxPoint x="95" y="625" />
+              <mxPoint x="95" y="535" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow17" edge="1" parent="1" source="showMoves" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1;" target="smoothPath" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="190" y="625" />
+              <mxPoint x="280" y="625" />
+              <mxPoint x="280" y="535" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow18" edge="1" parent="1" source="showMoves" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1;" target="pointPos" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="280" y="625" />
+              <mxPoint x="480" y="625" />
+              <mxPoint x="480" y="535" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow19" edge="1" parent="1" source="movePoint" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;labelBackgroundColor=#ffffff;" target="movePiece" value="appelle">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="190" y="175" />
+              <mxPoint x="240" y="175" />
+              <mxPoint x="240" y="715" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow20" edge="1" parent="1" source="movePiece" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;labelBackgroundColor=#ffffff;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.09;entryY=0.032;entryDx=0;entryDy=0;entryPerimeter=0;" target="updateData" value="appelle">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow21" edge="1" parent="1" source="movePiece" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;labelBackgroundColor=#ffffff;exitX=0.924;exitY=1.017;exitDx=0;exitDy=0;exitPerimeter=0;" target="draw" value="appelle">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-61" y="715" />
+              <mxPoint x="740" y="715" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow22" edge="1" parent="1" source="updateData" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;labelBackgroundColor=#ffffff;" target="updateGameStatus" value="appelle">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow23" edge="1" parent="1" source="updateGameStatus" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1;labelBackgroundColor=#ffffff;" target="isKingInCheck" value="appelle">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-180" y="1210" />
+              <mxPoint x="650" y="1210" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow24" edge="1" parent="1" source="updateGameStatus" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1;labelBackgroundColor=#ffffff;" target="hasValidMoves" value="appelle">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow25" edge="1" parent="1" source="hasValidMoves" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1;labelBackgroundColor=#ffffff;entryX=0.25;entryY=1;entryDx=0;entryDy=0;" target="getValidMovesWithCheck" value="appelle">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-480" y="355" />
+              <mxPoint x="-185" y="355" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow26" edge="1" parent="1" source="updateData" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1;labelBackgroundColor=#ffffff;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="displayGameStatus" value="appelle">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow27" edge="1" parent="1" source="updateData" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#d79b00;labelBackgroundColor=#ffffff;" target="socketEmitGameTurn" value="émet">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow28" edge="1" parent="1" source="selectNewPawn" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1;labelBackgroundColor=#ffffff;" target="updateData" value="appelle">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="680" y="265" />
+              <mxPoint x="680" y="360" />
+              <mxPoint x="930" y="360" />
+              <mxPoint x="930" y="770" />
+              <mxPoint x="130" y="770" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow29" edge="1" parent="1" source="serverCreateRoom" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;labelBackgroundColor=#ffffff;" target="generateRoomId" value="appelle">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow30" edge="1" parent="1" source="serverCreateRoom" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1;labelBackgroundColor=#ffffff;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="setClientRole" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1160" y="100" />
+              <mxPoint x="1160" y="245" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow31" edge="1" parent="1" source="serverCreateRoom" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1;labelBackgroundColor=#ffffff;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1160" y="100" />
+              <mxPoint x="1160" y="330" />
+            </Array>
+            <mxPoint x="1130" y="330" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow32" edge="1" parent="1" source="serverCreateRoom" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1;labelBackgroundColor=#ffffff;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="getAvailableRooms" value="appelle">
+          <mxGeometry relative="1" x="0.6393" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="1160" y="100" />
+              <mxPoint x="1160" y="375" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow33" edge="1" parent="1" source="socketEmitGameTurn" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#d79b00;dashed=1;labelBackgroundColor=#ffffff;" target="serverGameTurn" value="reçoit">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="320" y="985" />
+              <mxPoint x="1300" y="985" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow34" edge="1" parent="1" source="serverGameTurn" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#d79b00;dashed=1;labelBackgroundColor=#ffffff;" target="serverEmitUpdate" value="émet">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow35" edge="1" parent="1" source="serverEmitUpdate" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#d79b00;dashed=1;labelBackgroundColor=#ffffff;" target="clientSocketOnUpdate" value="reçoit">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1340" y="1075" />
+              <mxPoint x="225" y="1075" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow36" edge="1" parent="1" source="clientSocketOnUpdate" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1;labelBackgroundColor=#ffffff;" target="flipMap" value="appelle">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow37" edge="1" parent="1" source="clientSocketOnUpdate" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1;labelBackgroundColor=#ffffff;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" target="draw" value="appelle">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="400" y="1063" />
+              <mxPoint x="400" y="967" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow38" edge="1" parent="1" source="clientCreateRoom" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#d79b00;dashed=1;labelBackgroundColor=#ffffff;entryX=0.727;entryY=0.052;entryDx=0;entryDy=0;entryPerimeter=0;" target="clientEmitCreateRoom" value="émet">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow39" edge="1" parent="1" source="clientEmitCreateRoom" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#d79b00;dashed=1;labelBackgroundColor=#ffffff;" target="serverCreateRoom" value="reçoit">
+          <mxGeometry relative="1" x="0.2676" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="1560" y="185" />
+              <mxPoint x="1560" y="90" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow40" edge="1" parent="1" source="clientJoinRoom" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#d79b00;dashed=1;labelBackgroundColor=#ffffff;" target="clientEmitJoinRoom" value="émet">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow41" edge="1" parent="1" source="clientEmitJoinRoom" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#d79b00;dashed=1;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.997;entryY=0.579;entryDx=0;entryDy=0;entryPerimeter=0;" target="serverJoinRoom" value="reçoit">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1940" y="340" />
+              <mxPoint x="1490" y="340" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label-client" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;" value="&lt;b&gt;CLIENT (script_chess.js)&lt;/b&gt;" vertex="1">
+          <mxGeometry height="30" width="250" x="100" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="label-server" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;" value="&lt;b&gt;SERVEUR (server.js)&lt;/b&gt;" vertex="1">
+          <mxGeometry height="30" width="250" x="1200" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="label-client-lobby" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;" value="&lt;b&gt;CLIENT LOBBY (client.js)&lt;/b&gt;" vertex="1">
+          <mxGeometry height="30" width="250" x="1700" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="l9lUA9za69MT_sWUBzXH-8" edge="1" parent="1" source="l9lUA9za69MT_sWUBzXH-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="getValidMoves">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="l9lUA9za69MT_sWUBzXH-9" edge="1" parent="1" source="l9lUA9za69MT_sWUBzXH-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="showMoves">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="l9lUA9za69MT_sWUBzXH-7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6d8764;strokeColor=#3A5431;align=center;fontColor=#ffffff;" value="DOUBLONS !" vertex="1">
+          <mxGeometry height="20" width="100" x="-390" y="490" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
