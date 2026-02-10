@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "node.js": "^0.0.1-security",
-    "socket.io": "^4.8.1"
-  }
-}

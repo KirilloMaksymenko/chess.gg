@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "@ngrok/ngrok": "^1.6.1",
-    "dotenv": "^17.2.3"
-  }
-}
